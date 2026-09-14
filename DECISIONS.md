@@ -248,3 +248,16 @@ The dedicated profile retained authentication across a complete Chrome restart: 
 ChatGPT nor Claude required login again. The attached Chrome remains user-owned; the
 application exits cleanly without closing the attached browser. This is browser
 automation through the visible UI, not a Cloudflare bypass.
+### 11b. Verified ChatGPT Milestone 1 real-site smoke test
+
+The real ChatGPT Milestone 1 smoke test passed against the manually launched dedicated
+Chrome over CDP. The adapter successfully discovered the existing ChatGPT tab, captured
+the current turn baseline, submitted the prompt `Reply with exactly: PHASE2_CHATGPT_OK`,
+detected generation start, detected generation completion, and extracted the current-turn
+response exactly as `PHASE2_CHATGPT_OK`.
+
+The real-page completion detector lesson is that Send-button visibility is not a
+completion requirement. Completion requires a new response relative to the baseline, a
+non-empty normalized response, no visible generation-active/stop control for consecutive
+polls, and unchanged response text for the configured stability interval. The Send button
+is diagnostic only.

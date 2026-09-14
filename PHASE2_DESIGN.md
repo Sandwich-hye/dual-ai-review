@@ -688,3 +688,11 @@ including killing the process mid-run and successfully resuming it.
 
   Nothing else — `claudeSite.ts`, the orchestrator, prompts, and persistence are all later
   milestones and should not be touched yet.
+## 15. Milestone 1 real-page completion clarification
+
+The real ChatGPT smoke test verified that the normal Send control may be absent or
+replaced after a response completes. Therefore, the completion rule is: a new assistant
+response exists relative to the TurnBaseline, its normalized text is non-empty, no
+**visible** generation-active/stop control is present for consecutive polls, and the text
+remains unchanged for the configured stability interval. Send-button visibility or
+enabled state is diagnostic only and must not be required for completion.

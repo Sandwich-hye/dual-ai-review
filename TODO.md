@@ -118,6 +118,16 @@ the actual, verified state of the repository — not intentions, not "should be 
 
 ## Future Phase 2 — ChatGPT Adapter
 
+### Phase 2A — Milestone 1: ChatGPT send + wait + latest-response detection
+- [x] Add shared DOM utilities and isolated ChatGPT selector fallback groups
+- [x] Capture a pre-send `TurnBaseline` and resolve only the new assistant response
+- [x] Send prompts through the existing attached ChatGPT page and verify submission
+- [x] Detect generation start and bounded generation completion using UI state plus text stability
+- [x] Handle composer, submission, timeout, empty-response, login, unknown-state, and disconnect failures
+- [x] Add offline fake-chat fixture and adapter/baseline tests; keep all Phase 1 tests passing
+- [x] Perform the manual real-ChatGPT Milestone 1 smoke test (not part of automated tests)
+
+
 - [ ] **GATE / BLOCKER — do not implement automatic ChatGPT response extraction until
       this is satisfied.** OpenAI's current consumer Terms of Use prohibit automatically
       or programmatically extracting data or Output from the ChatGPT consumer web

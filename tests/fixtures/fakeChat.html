@@ -1,0 +1,32 @@
+<!doctype html>
+<html><body>
+<section id="messages">
+<article data-message-author-role="assistant" data-message-id="old-1">Old assistant response</article>
+</section>
+<div id="composer" contenteditable="true" role="textbox" aria-label="Message ChatGPT"></div>
+<button id="send" data-testid="send-button" aria-label="Send">Send</button>
+<button id="stop" data-testid="stop-button" aria-label="Stop generating" hidden>Stop</button>
+<p id="unrelated">This text is not an assistant response.</p>
+<script>
+const mode = new URLSearchParams(location.search).get("mode") || "normal";
+const composer = document.querySelector("#composer"), send = document.querySelector("#send"), stop = document.querySelector("#stop"), messages = document.querySelector("#messages");
+let sequence = 0;
+function assistant(id, text) { const node = document.createElement("article"); node.dataset.messageAuthorRole = "assistant"; node.dataset.messageId = id; node.textContent = text; messages.appendChild(node); return node; }
+function busy(value) { stop.hidden = !value; send.disabled = value; }
+send.addEventListener("click", () => {
+  if (!composer.textContent.trim() || mode === "reject") return;
+  composer.textContent = ""; busy(true); if (mode === "never") return;
+  const id = "new-" + (++sequence);
+  setTimeout(() => {
+    if (mode === "multi") { assistant(id + "-a", "first"); assistant(id + "-b", "second"); busy(false); return; }
+    if (mode === "visible-stop") { assistant(id, "stable final response"); return; }
+    const node = assistant(id, mode === "empty" ? "" : mode === "changing" ? "stream one" : "stable final response");
+    if (mode === "changing") {
+      setTimeout(() => node.textContent = "stream one stream two", 120);
+      setTimeout(() => node.textContent = "stable final response", 240);
+      setTimeout(() => busy(false), 420);
+    } else setTimeout(() => { busy(false); if (mode === "no-send") send.remove(); }, 220);
+  }, 120);
+});
+</script>
+</body></html>
