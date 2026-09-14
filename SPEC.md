@@ -261,7 +261,10 @@ only waits for a human to do so, then re-observes the resulting page state.
 - Fields for Phase 1:
   ```json
   {
+    "browserMode": "attach",
+    "cdpEndpoint": "http://127.0.0.1:9222",
     "browserProfileDir": ".browser-profile",
+    "browserChannel": "chrome",
     "headless": false,
     "navigationTimeoutMs": 30000,
     "sites": {
@@ -449,3 +452,17 @@ required part of the automated test suite.
   human-in-the-loop relay where the user manually copies text, or another officially
   sanctioned mechanism). This is recorded as a standing gate on Future Phase 2 in
   `TODO.md`, not a blocker on Phase 1.
+
+
+## 8b. Manual Chrome + Playwright CDP Attach Mode
+
+Phase 1 also supports attaching to a manually launched, dedicated Google Chrome instance.
+
+- `browserMode` is `launch` or `attach`.
+- In `launch` mode, Playwright owns a persistent context using the dedicated profile.
+- In `attach` mode, Playwright uses `chromium.connectOverCDP(cdpEndpoint)`.
+- The default local endpoint is `http://127.0.0.1:9222`.
+- Attach mode only inspects existing ChatGPT and Claude tabs selected by hostname.
+- It does not create replacement tabs or navigate existing tabs.
+- The user owns the manually launched browser; the application must not close it.
+- The manually launched browser must use `.browser-profile`, never the normal Chrome profile.

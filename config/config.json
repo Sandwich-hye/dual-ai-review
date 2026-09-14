@@ -1,0 +1,13 @@
+{
+  "browserMode": "attach",
+  "cdpEndpoint": "http://127.0.0.1:9222",
+  "browserProfileDir": ".browser-profile",
+  "browserChannel": "chrome",
+  "headless": false,
+  "navigationTimeoutMs": 30000,
+  "sites": {
+    "chatgpt": { "url": "https://chatgpt.com/" },
+    "claude": { "url": "https://claude.ai/new" }
+  }
+}
+

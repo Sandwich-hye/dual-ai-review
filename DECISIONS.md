@@ -227,3 +227,24 @@ this gate has been explicitly satisfied and recorded here. This gate is specific
 *ChatGPT* because it is the specific service whose current consumer terms were identified
 as a concern; if Claude's or any future site's terms impose similar restrictions, apply
 the same gate-and-record process to that site's adapter as well.
+
+
+## 11. Why manual Chrome + CDP attach mode is supported
+
+Claude Cloudflare verification succeeded when the user manually launched Google Chrome with a dedicated project profile, but looped when Chrome was launched directly by Playwright. Phase 1 therefore supports an attach mode using Playwright `chromium.connectOverCDP`.
+
+Attach mode is strictly local and user-owned: Chrome is started with `--remote-debugging-address=127.0.0.1`, `--remote-debugging-port=9222`, and the project `.browser-profile` path. The application discovers existing ChatGPT and Claude tabs by hostname, performs only readiness checks, and does not create or navigate tabs. It must not close the attached Chrome process on shutdown.
+
+This remains browser UI automation only. It does not bypass Cloudflare, use private APIs, send messages, or extract responses.
+### 11a. Verified real-site attach-mode result
+
+The Phase 1 real-site attach-mode manual test was completed successfully. Direct
+Playwright-launched Chromium caused Claude Cloudflare verification loops, and launching
+installed Chrome through Playwright caused the same loop. Manually launching the
+dedicated Chrome with localhost remote debugging successfully completed Cloudflare
+verification. Playwright CDP attach mode then detected both ChatGPT and Claude as ready.
+
+The dedicated profile retained authentication across a complete Chrome restart: neither
+ChatGPT nor Claude required login again. The attached Chrome remains user-owned; the
+application exits cleanly without closing the attached browser. This is browser
+automation through the visible UI, not a Cloudflare bypass.

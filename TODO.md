@@ -19,32 +19,32 @@ the actual, verified state of the repository — not intentions, not "should be 
 
 ## Current Phase
 
-**Phase 1 — Browser Foundation** (design complete; implementation not started)
+**Phase 1 — Browser Foundation** (implementation complete; attach-mode workflow verified against real sites; pending final freeze decision — see REVIEW.md)
 
 ---
 
 ## Phase 1 — Browser Foundation
 
 ### Setup
-- [ ] Initialize `package.json` (Node + TypeScript project)
-- [ ] Add Playwright as a dependency and run its browser install step
-- [ ] Add `tsconfig.json`
-- [ ] Add `.gitignore` covering `.browser-profile/`, `logs/`, `node_modules/`,
+- [x] Initialize `package.json` (Node + TypeScript project)
+- [x] Add Playwright as a dependency and run its browser install step
+- [x] Add `tsconfig.json`
+- [x] Add `.gitignore` covering `.browser-profile/`, `logs/`, `node_modules/`,
       `test-results/`, `playwright-report/`
-- [ ] Create `config/config.json` with the Phase 1 schema from `SPEC.md` §11
+- [x] Create `config/config.json` with the Phase 1 schema from `SPEC.md` §11
 
 ### Core modules
-- [ ] `src/logging/logger.ts` — console + file logger
-- [ ] `src/config/loadConfig.ts` — load + validate `config/config.json`
-- [ ] `src/browser/launchBrowser.ts` — persistent context launch (profile dir, headed,
+- [x] `src/logging/logger.ts` — console + file logger
+- [x] `src/config/loadConfig.ts` — load + validate `config/config.json`
+- [x] `src/browser/launchBrowser.ts` — persistent context launch (profile dir, headed,
       timeouts)
-- [ ] `src/browser/shutdown.ts` — clean close on success / error / SIGINT / SIGTERM
-- [ ] `src/sites/siteTypes.ts` — `SiteAdapter` / `SiteLoadResult` shared types
-- [ ] `src/sites/siteRegistry.ts` — Phase 1 site list (chatgpt, claude)
-- [ ] `src/sites/openSite.ts` — generic navigate + readiness-check routine
-- [ ] `src/sites/chatgptSite.ts` — ChatGPT URL + readiness detector only
-- [ ] `src/sites/claudeSite.ts` — Claude URL + readiness detector only
-- [ ] `src/main.ts` — composition root wiring the above together, including the
+- [x] `src/browser/shutdown.ts` — clean close on success / error / SIGINT / SIGTERM
+- [x] `src/sites/siteTypes.ts` — `SiteAdapter` / `SiteLoadResult` shared types
+- [x] `src/sites/siteRegistry.ts` — Phase 1 site list (chatgpt, claude)
+- [x] `src/sites/openSite.ts` — generic navigate + readiness-check routine
+- [x] `src/sites/chatgptSite.ts` — ChatGPT URL + readiness detector only
+- [x] `src/sites/claudeSite.ts` — Claude URL + readiness detector only
+- [x] `src/main.ts` — composition root wiring the above together, including the
       interactive login-wait flow (SPEC.md §8a)
 
 ### Behavior
@@ -53,9 +53,9 @@ the actual, verified state of the repository — not intentions, not "should be 
 - [ ] The persistent context uses a dedicated, project-local `userDataDir` (default
       `.browser-profile/`) — never the user's normal daily Chrome profile directory, even
       when `channel: "chrome"` is used (SPEC.md §8)
-- [ ] Readiness detector classifies each site as one of: `ready`, `login_required`,
+- [x] Readiness detector classifies each site as one of: `ready`, `login_required`,
       `unknown_state`, `navigation_failed`
-- [ ] Failure on one site does not prevent the other site's attempt
+- [x] Failure on one site does not prevent the other site's attempt
 - [ ] Interactive login-wait flow: if either site is `login_required` after initial
       detection, the browser stays open, a clear console message is printed, the process
       blocks on ENTER, then readiness is re-checked for both sites and the new
@@ -67,25 +67,28 @@ the actual, verified state of the repository — not intentions, not "should be 
 - [ ] Browser/context closes cleanly on normal exit, thrown error, and SIGINT/SIGTERM
 
 ### Tests — A. Automated / local (no dependency on real ChatGPT/Claude sites; SPEC.md §14A)
-- [ ] `tests/fixtures/` — local static HTML fixtures for `ready`, `login_required`, and
+- [x] `tests/fixtures/` — local static HTML fixtures for `ready`, `login_required`, and
       unknown page states
-- [ ] `tests/unit/config.spec.ts` (or similar) — config loading/validation, including
+- [x] `tests/unit/config.spec.ts` (or similar) — config loading/validation, including
       malformed/missing-field error cases
-- [ ] `tests/unit/logging.spec.ts` — log format, console + file output, file non-empty
+- [x] `tests/unit/logging.spec.ts` — log format, console + file output, file non-empty
       after a logged event
-- [ ] `tests/unit/siteLoadResult.spec.ts` — readiness detector returns correct
+- [x] `tests/unit/siteLoadResult.spec.ts` — readiness detector returns correct
       classification against each local fixture
-- [ ] `tests/unit/openSite.spec.ts` — one invalid/unreachable "site" + one valid fixture
+- [x] `tests/unit/openSite.spec.ts` — one invalid/unreachable "site" + one valid fixture
       "site" → failure isolation proven without touching real sites
-- [ ] `tests/unit/shutdown.spec.ts` — context closes cleanly on normal run and on a
+- [x] `tests/unit/shutdown.spec.ts` — context closes cleanly on normal run and on a
       simulated mid-run error
-- [ ] Automated suite passes locally without network access to chatgpt.com or claude.ai
+- [x] `tests/unit/browserDiscovery.spec.ts` — attach-mode hostname matching (chatgpt.com,
+      chat.openai.com, claude.ai) correctly selects existing tabs and ignores unrelated
+      hosts
+- [x] Automated suite passes locally without network access to chatgpt.com or claude.ai
 
 ### Tests — B. Manual / integration (real sites; SPEC.md §14B; not part of core automated suite)
-- [ ] `tests/manual/phase1.real-sites.md` checklist written
+- [x] `tests/manual/phase1.real-sites.md` checklist written
 - [ ] Manual test: fresh dedicated profile → login-wait flow triggers → manual login →
       ENTER → both sites classified `ready`
-- [ ] Manual test: second run with same profile → both sites `ready` **without** the
+- [x] Manual test: second run with same profile → both sites `ready` **without** the
       login-wait flow triggering and **without** a re-login prompt (persistence proof)
 - [ ] Manual test: one site URL broken in config, run against the real other site → other
       site still loads and logs correctly (real-world isolation proof)
@@ -96,10 +99,11 @@ the actual, verified state of the repository — not intentions, not "should be 
 
 ### Phase 1 Acceptance Criteria (mirrors SPEC.md §13 — check off only after verifying)
 - [ ] Single persistent Chromium context launches from a project-local profile dir
-- [ ] Session persists across two consecutive runs (no re-login)
-- [ ] ChatGPT load outcome correctly classified and logged
-- [ ] Claude load outcome correctly classified and logged, independent of ChatGPT's result
-- [ ] One site's failure does not block the other site's attempt
+- [x] Session persists across two consecutive runs (no re-login)
+- [x] ChatGPT load outcome correctly classified and logged
+- [x] Claude load outcome correctly classified and logged, independent of ChatGPT's result
+- [x] One site's failure does not block the other site's attempt (same fact as the
+      checked Behavior item above; covered by `tests/unit/openSite.spec.ts`)
 - [ ] Login-wait flow triggers on `login_required`, waits for ENTER, and re-classifies
       both sites without ever automating credential/OTP/SSO/CAPTCHA entry
 - [ ] Dedicated automation profile confirmed distinct from the user's daily Chrome profile
@@ -179,3 +183,11 @@ the actual, verified state of the repository — not intentions, not "should be 
   automated/programmatic Output extraction are re-evaluated and a compliant approach is
   chosen and documented. See the GATE item under "Future Phase 2 — ChatGPT Adapter" above
   and `DECISIONS.md` §10.
+
+
+### Manual Chrome attach mode (Phase 1)
+- [x] Support configurable `browserMode` launch/attach and local CDP endpoint
+- [x] Attach to existing dedicated Chrome with Playwright CDP without creating or navigating tabs
+- [x] Preserve browser ownership: only launch mode closes the browser
+- [x] Add dedicated Chrome startup script using `.browser-profile`
+- [x] Manual attach-mode real-site test personally verified

@@ -1,0 +1,20 @@
+{
+  "name": "dual-ai-review",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local browser foundation for dual AI review",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/src/main.js",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "playwright": "^1.55.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

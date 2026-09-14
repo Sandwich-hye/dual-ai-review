@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.browser-profile/
+logs/
+test-results/
+playwright-report/
+
+.test-browser-profile/
+.test-logs/
