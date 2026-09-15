@@ -13,6 +13,21 @@ test("uses Claude composer fallback and submits a prompt", async ({ page }) => {
   await sendPrompt(page, "hello Claude");
   expect(await waitForGenerationStart(page, baseline)).toBe("started");
 });
+test("completed fast Claude response confirms generation start even when active control is missed", async ({ page }) => {
+  await page.goto(fixture + "?mode=instant");
+  const baseline = await captureClaudeTurnBaseline(page);
+  await sendPrompt(page, "fast response");
+  expect(await waitForGenerationStart(page, baseline, { pollIntervalMs: 100 })).toBe("started");
+  expect((await waitForGenerationComplete(page, baseline, 1000, { stabilityIntervalMs: 80 })).outcome).toBe("complete");
+  expect(await getLatestAssistantResponse(page, baseline)).toBe("stable Claude response");
+});
+
+test("generation start times out when neither active control nor a new assistant exists", async ({ page }) => {
+  await page.goto(fixture + "?mode=no-signal");
+  const baseline = await captureClaudeTurnBaseline(page);
+  await sendPrompt(page, "no response");
+  expect(await waitForGenerationStart(page, baseline, { startTimeoutMs: 150, pollIntervalMs: 25 })).toBe("not_observed");
+});
 test("captures baseline and excludes the old Claude response", async ({ page }) => {
   await page.goto(fixture);
   const baseline = await captureClaudeTurnBaseline(page);
@@ -57,7 +72,7 @@ test("visible generation control prevents completion", async ({ page }) => {
   }
 });
 test("times out when generation never finishes", async ({ page }) => {
-  await page.goto(fixture + "?mode=never");
+  await page.goto(fixture + "?mode=no-signal");
   const baseline = await captureClaudeTurnBaseline(page);
   await sendPrompt(page, "never");
   await waitForGenerationStart(page, baseline);

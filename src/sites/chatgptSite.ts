@@ -1,5 +1,5 @@
-﻿import { Page } from "playwright";
-import { AmbiguousNewMessageError, captureTurnBaseline, countForSelectorGroup, firstVisible, firstVisibleEnabled, hasVisible, readNewAssistantText, resolveNewAssistantMessage, sleep } from "../browser/domUtil";
+import { Page } from "playwright";
+import { AmbiguousNewMessageError, captureTurnBaseline, countForSelectorGroup, firstVisible, firstVisibleEnabled, hasVisible, normalizeLogicalText, readNewAssistantText, readProseMirrorLogicalText, resolveNewAssistantMessage, sleep } from "../browser/domUtil";
 import { chatgptSelectors } from "./selectors/chatgptSelectors";
 import { ConversationalSiteAdapter, GenerationOutcome, GenerationStartResult, SiteAdapter, SiteLoadStatus, TurnBaseline } from "./siteTypes";
 
@@ -51,14 +51,14 @@ export async function sendPrompt(page: Page, prompt: string): Promise<void> {
   const composer = await firstVisible(page, chatgptSelectors.composer);
   if (!composer) throw new ComposerNotFoundError();
   await composer.click().catch(() => { throw new SubmissionError("Could not focus the ChatGPT composer"); });
-  await composer.fill(prompt).catch(() => undefined);
-  let entered = textValue((await composer.innerText().catch(() => composer.textContent().catch(() => "") ?? "")) ?? "");
-  if (!entered.includes(textValue(prompt))) {
-    await composer.fill("").catch(() => undefined);
-    await composer.pressSequentially(prompt).catch(() => { throw new SubmissionError("Could not enter prompt into ChatGPT composer"); });
-    entered = textValue((await composer.innerText().catch(() => composer.textContent().catch(() => "") ?? "")) ?? "");
+  await composer.fill(prompt).catch(() => { throw new SubmissionError("Could not enter prompt into ChatGPT composer"); });
+  const tagName = await composer.evaluate(node => node.tagName.toLowerCase()).catch(() => "");
+  const enteredRaw = tagName === "textarea" || tagName === "input"
+    ? await composer.inputValue().catch(() => "")
+    : await readProseMirrorLogicalText(composer).catch(() => "");
+  if (normalizeLogicalText(enteredRaw) !== normalizeLogicalText(prompt)) {
+    throw new SubmissionError("ChatGPT composer did not contain the submitted prompt");
   }
-  if (!entered.includes(textValue(prompt))) throw new SubmissionError("ChatGPT composer did not contain the submitted prompt");
   const sendButton = await firstVisibleEnabled(page, chatgptSelectors.sendButton);
   if (sendButton) await sendButton.click().catch(() => { throw new SubmissionError("ChatGPT send button could not be clicked"); });
   else await composer.press("Enter").catch(() => { throw new SubmissionError("ChatGPT composer could not be submitted"); });

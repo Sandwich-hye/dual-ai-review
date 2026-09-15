@@ -19,7 +19,9 @@ the actual, verified state of the repository 閳?not intentions, not "should be 
 
 ## Current Phase
 
-**Phase 2A — Milestone 3 complete** (real ChatGPT-to-Claude single-round flow verified; Milestone 4 not started)
+**Phase 2A — Milestone 3 complete** (real ChatGPT-to-Claude single-round flow verified);
+Milestone 4A architecture/design drafted in `MILESTONE4A_DESIGN.md` (implementation not
+started)
 
 ---
 
@@ -149,6 +151,32 @@ the actual, verified state of the repository 閳?not intentions, not "should be 
   `[data-perf-reply-text]`, and active generation is indicated by
   `[data-is-streaming="true"]`.
 
+
+### Phase 2A - Milestone 4A: Fixed multi-round review loop (implementation complete; real smoke pending)
+
+See `MILESTONE4A_DESIGN.md` for the full design. Planned tasks (do not check off until
+implemented and verified):
+
+- [x] Add `src/orchestration/runFixedReviewLoop.ts`: browser-agnostic fixed-round state
+      machine (`G0 → C1 → G1 → ... → C(reviewRounds) → G(reviewRounds)`), depending only
+      on `ConversationalSiteAdapter`, no Playwright selectors
+- [x] Add `src/orchestration/fixedReviewPrompts.ts`: `buildInitialChatGptPrompt`,
+      `buildClaudeReviewPrompt`, `buildChatGptRevisionPrompt` (each round restates the
+      full task and full current answer/review; no STATUS/convergence line)
+- [x] Implement structured failure stages (`round`/`turn`/`site`/`step`) and a
+      `FixedReviewLoopError` carrying `partialResult` (completed rounds so far)
+- [x] Use the existing adapter-owned baseline/send/wait/extract guarantees; no orchestration DOM/count settling or send retry
+- [x] Add `tests/unit/runFixedReviewLoop.spec.ts` covering the 14-case matrix in
+      `MILESTONE4A_DESIGN.md` §10 (fixed round counts, prompt content/order, failure
+      isolation, partial-result availability, transient-instability tolerance, no
+      duplicate-send)
+- [x] Add `tests/unit/fixedReviewPrompts.spec.ts` for prompt-builder content
+- [x] Add `scripts/smoke-multi-round.ts` + `npm run smoke:multi-round` (reviewRounds = 2
+      against the real attached ChatGPT/Claude tabs), including the independent
+      turn-count-delta check that guards against a silently duplicated submission
+- [ ] Perform the manual real-site Milestone 4A smoke test and record the result in
+      `DECISIONS.md`/`REVIEW.md` (not part of the automated suite)
+- [x] Explicitly confirmed no changes were made to `chatgptSite.ts`, `claudeSite.ts`, `claudeUserTurns.ts`, `domUtil.ts`, or any selector file
 
 - [ ] **GATE / BLOCKER 閳?do not implement automatic ChatGPT response extraction until
       this is satisfied.** OpenAI's current consumer Terms of Use prohibit automatically

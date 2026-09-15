@@ -49,10 +49,14 @@ composer.addEventListener("keydown", event => {
 send.addEventListener("click", () => {
   if (!composer.textContent.trim() || mode === "reject") return;
   submitCount += 1;
-  const blocks = Array.from(composer.children);
+  const blocks = Array.from(composer.childNodes).filter(node => node.nodeType === Node.TEXT_NODE || node.nodeType === Node.ELEMENT_NODE);
   const logicalPrompt = blocks.length === 0
     ? composer.textContent
-    : blocks.map(block => block.children.length === 1 && block.firstElementChild?.tagName.toLowerCase() === "br" ? "" : block.textContent ?? "").join("\n");
+    : blocks.map(block => block.nodeType === Node.TEXT_NODE
+      ? block.textContent ?? ""
+      : block.children.length === 1 && block.firstElementChild?.tagName.toLowerCase() === "br"
+        ? ""
+        : block.textContent ?? "").join("\n");
   submittedPrompts.push(logicalPrompt.trim());
   composer.textContent = "";
   const userTurn = document.createElement("article");
@@ -64,10 +68,12 @@ send.addEventListener("click", () => {
   conversation.appendChild(userTurn);
   busy(true);
   if (mode === "security") { security.hidden = false; return; }
+  if (mode === "no-signal") { busy(false); return; }
   if (mode === "never") return;
   const id = "new-claude-" + (++sequence);
   setTimeout(() => {
     if (mode === "multi") { assistant(id + "-a", "first"); assistant(id + "-b", "second"); busy(false); return; }
+    if (mode === "instant") { assistant(id, "stable Claude response"); busy(false); return; }
     if (mode === "visible-stop") { assistant(id, "stable Claude response"); return; }
     const node = assistant(id, mode === "empty" ? "" : mode === "changing" ? "Claude stream one" : "stable Claude response");
     if (mode === "changing") {

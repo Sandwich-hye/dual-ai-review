@@ -1,0 +1,44 @@
+import { chromium, Page } from "playwright";
+import { discoverSitePages } from "../src/browser/discoverSitePages";
+import { captureClaudeTurnBaseline, checkClaudeReady } from "../src/sites/claudeSite";
+import { claudeSelectors } from "../src/sites/selectors/claudeSelectors";
+import { hasVisible, readNewAssistantText } from "../src/browser/domUtil";
+import { TurnBaseline } from "../src/sites/siteTypes";
+
+const CDP_ENDPOINT = "http://127.0.0.1:9222";
+const POLL_INTERVAL_MS = 100;
+const STABILITY_INTERVAL_MS = 700;
+function normalize(value: string): string { return value.replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ").replace(/\n+/g, " ").trim(); }
+type ElementReport = { tag: string; ariaLabel: string; dataTestId: string; dataStreaming: string; className: string; textPreview: string; appearsToBeStopControl: boolean };
+
+async function visibleElements(page: Page, selector: string): Promise<ElementReport[]> {
+  const locator = page.locator(selector); const reports: ElementReport[] = [];
+  for (let index = 0; index < await locator.count().catch(() => 0); index += 1) {
+    const item = locator.nth(index); if (!await item.isVisible().catch(() => false)) continue;
+    reports.push(await item.evaluate(node => { const element = node as HTMLElement; const ariaLabel = node.getAttribute("aria-label") ?? ""; const dataTestId = node.getAttribute("data-testid") ?? ""; const dataStreaming = node.getAttribute("data-is-streaming") ?? ""; const className = typeof node.className === "string" ? node.className : ""; const textPreview = (element.innerText ?? node.textContent ?? "").replace(/\\r\\n?/g, "\\n").replace(/\\u00a0/g, " ").replace(/[ \\t]+/g, " ").replace(/\\n+/g, " ").trim().slice(0, 100); return { tag: node.tagName.toLowerCase(), ariaLabel, dataTestId, dataStreaming, className, textPreview, appearsToBeStopControl: /stop|generat|cancel|abort/i.test([ariaLabel, dataTestId, className, textPreview].join(" ")) }; }));
+  }
+  return reports;
+}
+async function selectorReport(page: Page, selector: string): Promise<Record<string, unknown>> { const locator = page.locator(selector); return { selector, totalMatches: await locator.count().catch(() => 0), visibleMatches: (await visibleElements(page, selector)).length, visibleElements: await visibleElements(page, selector) }; }
+async function latestAssistant(page: Page): Promise<Record<string, unknown> | null> {
+  for (const selector of claudeSelectors.assistantMessage) { const locator = page.locator(selector); if (await locator.count().catch(() => 0) === 0) continue; return locator.last().evaluate((node, selectorName) => { const response = node.querySelector("[data-perf-reply-text]")?.textContent ?? ""; return { selector: selectorName, ariaLabel: node.getAttribute("aria-label") ?? "", containsPerfReplyText: node.querySelector("[data-perf-reply-text]") !== null, responseTextLength: response.length, first100NormalizedCharacters: response.replace(/\\r\\n?/g, "\\n").replace(/\\u00a0/g, " ").replace(/[ \\t]+/g, " ").replace(/\\n+/g, " ").trim().slice(0, 100), dataIsStreaming: node.getAttribute("data-is-streaming"), dataMessageId: node.getAttribute("data-message-id") }; }, selector); }
+  return null;
+}
+async function diagnosticBaselineForLatest(page: Page): Promise<TurnBaseline> { const baseline = await captureClaudeTurnBaseline(page); const latest = await latestAssistant(page); if (!latest || baseline.count === 0) return baseline; const latestId = latest.dataMessageId ? "stable:" + latest.dataMessageId : "index:" + (baseline.count - 1); return { count: baseline.count - 1, ids: new Set([...baseline.ids].filter(id => id !== latestId)) }; }
+async function sample(page: Page, baseline: TurnBaseline, previousLength: number | undefined): Promise<Record<string, unknown>> {
+  const generationActiveVisible = await hasVisible(page, claudeSelectors.stopGenerating); const candidate = await readNewAssistantText(page, claudeSelectors.assistantMessage, baseline, claudeSelectors.assistantResponseText); const length = normalize(candidate ?? "").length; const latest = await latestAssistant(page);
+  return { normalizedResponseTextLength: length, responseTextChangedSincePreviousSample: previousLength === undefined ? null : length !== previousLength, generationActiveVisible, dataIsStreaming: latest?.dataIsStreaming ?? null, assistantArticleCount: await page.locator(claudeSelectors.assistantMessage[0]).count().catch(() => 0), newAssistantResponseExists: candidate !== undefined, productionCompletionPredicate: { noNewAssistantResponse: candidate === undefined, emptyText: length === 0, generationActiveStillVisible: generationActiveVisible, textStableLongEnough: false, other: "A single sample cannot establish the 700 ms stability interval." } };
+}
+async function run(): Promise<number> {
+  try {
+    const browser = await chromium.connectOverCDP(CDP_ENDPOINT); const pages = browser.contexts().flatMap(context => context.pages()); const { claude } = discoverSitePages(pages); if (!claude) throw new Error("No existing Claude tab was found by hostname.");
+    const baseline = await diagnosticBaselineForLatest(claude); console.log("Claude completion diagnostic (read-only)"); console.log(JSON.stringify({ url: claude.url(), readiness: await checkClaudeReady(claude) }, null, 2));
+    console.log("\nLatest assistant article:"); console.log(JSON.stringify(await latestAssistant(claude), null, 2));
+    console.log("\nCurrent production selector/signal evaluation:"); console.log(JSON.stringify({ generationActiveSelectors: await Promise.all(claudeSelectors.stopGenerating.map(selector => selectorReport(claude, selector))), assistantMessageSelectors: await Promise.all(claudeSelectors.assistantMessage.map(selector => selectorReport(claude, selector))), assistantResponseTextSelector: await selectorReport(claude, claudeSelectors.assistantResponseText), errorBannerSelectors: await Promise.all(claudeSelectors.errorBanner.map(selector => selectorReport(claude, selector))), securityVerificationSelectors: await Promise.all(claudeSelectors.securityVerification.map(selector => selectorReport(claude, selector))), sendButtonSelectors: await Promise.all(claudeSelectors.sendButton.map(selector => selectorReport(claude, selector))), allVisibleProductionGenerationActiveElements: (await Promise.all(claudeSelectors.stopGenerating.map(selector => visibleElements(claude, selector)))).flat() }, null, 2));
+    console.log("\nDiagnostic baseline used for latest-response predicate:"); console.log(JSON.stringify({ count: baseline.count, ids: [...baseline.ids] }, null, 2));
+    console.log("\\nCompletion samples:"); let previousLength: number | undefined; let lastChangedAt = 0; let inactiveSamples = 0; let elapsed = 0; for (const target of [0, 500, 1500, 3000]) { if (target > elapsed) await new Promise(resolve => setTimeout(resolve, target - elapsed)); const result = await sample(claude, baseline, previousLength); const length = result.normalizedResponseTextLength as number; const active = result.generationActiveVisible as boolean; if (previousLength === undefined || length !== previousLength) lastChangedAt = target; if (active) inactiveSamples = 0; else inactiveSamples += 1; const stableForMs = target - lastChangedAt; const predicate = result.productionCompletionPredicate as Record<string, unknown>; predicate.textStableLongEnough = !active && inactiveSamples >= 2 && stableForMs >= STABILITY_INTERVAL_MS; predicate.estimatedTextStableForMs = stableForMs; predicate.estimatedInactiveSamples = inactiveSamples; predicate.blockingConditions = predicate.noNewAssistantResponse ? ["no new assistant response"] : predicate.emptyText ? ["empty text"] : predicate.generationActiveStillVisible ? ["generationActiveVisible still true"] : predicate.textStableLongEnough ? [] : ["text not stable long enough in sampled observations"]; previousLength = length; elapsed = target; console.log(`t=${target} ms`); console.log(JSON.stringify(result, null, 2)); }
+    console.log("\nProduction waitForGenerationComplete algorithm:"); console.log(JSON.stringify({ pollIntervalMs: POLL_INTERVAL_MS, stabilityIntervalMs: STABILITY_INTERVAL_MS, timeout: "caller-provided timeoutMs", algorithm: ["Reject security verification or visible error banner.", "Read visible generation-active state and the one-new-assistant response candidate.", "While active, reset inactive polls and stability tracking.", "While inactive, require a non-empty new response, two inactive polls, and unchanged text for 700 ms.", "Otherwise return timeout with partial text and diagnostics."] }, null, 2));
+    console.log("\nNo clicks, typing, submission, navigation, retries, or tab closure were performed."); return 0;
+  } catch (error) { console.error("Claude completion diagnostic failed:"); console.error(error instanceof Error ? error.message : String(error)); return 1; }
+}
+run().then(code => { process.exitCode = code; setTimeout(() => process.exit(code), 0); });

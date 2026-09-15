@@ -1,5 +1,5 @@
-﻿import { Page } from "playwright";
-import { AmbiguousNewMessageError, captureTurnBaseline, countForSelectorGroup, firstVisible, firstVisibleEnabled, hasVisible, normalizeLogicalText, readNewAssistantText, readProseMirrorLogicalText, resolveNewAssistantMessage, sleep } from "../browser/domUtil";
+import { Page } from "playwright";
+import { AmbiguousNewMessageError, captureTurnBaseline, firstVisible, firstVisibleEnabled, hasVisible, normalizeLogicalText, readNewAssistantText, readProseMirrorLogicalText, resolveNewAssistantMessage, sleep } from "../browser/domUtil";
 import { claudeSelectors } from "./selectors/claudeSelectors";
 import { ConversationalSiteAdapter, GenerationOutcome, GenerationStartResult, SiteAdapter, SiteLoadStatus, TurnBaseline } from "./siteTypes";
 
@@ -95,7 +95,9 @@ export async function waitForGenerationStart(page: Page, baseline: TurnBaseline,
   while (Date.now() < deadline) {
     ensureConnected(page);
     if (await isClaudeSecurityVerificationVisible(page)) throw new ClaudeOperationError("security_verification", "Claude security verification appeared; recover manually");
-    if (await hasVisible(page, claudeSelectors.stopGenerating) || await countForSelectorGroup(page, claudeSelectors.assistantMessage) > baseline.count) return "started";
+    const generationActiveVisible = await hasVisible(page, claudeSelectors.stopGenerating);
+    const newAssistantResponse = await readNewAssistantText(page, claudeSelectors.assistantMessage, baseline, claudeSelectors.assistantResponseText);
+    if (generationActiveVisible || newAssistantResponse !== undefined) return "started";
     await sleep(options.pollIntervalMs ?? POLL_INTERVAL_MS);
   }
   return "not_observed";
@@ -103,6 +105,9 @@ export async function waitForGenerationStart(page: Page, baseline: TurnBaseline,
 export async function waitForGenerationComplete(page: Page, baseline: TurnBaseline, timeoutMs: number, options: ClaudeAdapterOptions = {}): Promise<GenerationOutcome> {
   ensureConnected(page);
   const deadline = Date.now() + timeoutMs;
+  const timingEnabled = process.env.DUAL_AI_REVIEW_CLAUDE_TIMING === "1";
+  const timingStartedAt = Date.now();
+  if (timingEnabled) console.log(`[claude completion] start timeoutMs=${timeoutMs}`);
   const pollInterval = options.pollIntervalMs ?? POLL_INTERVAL_MS;
   const stabilityInterval = options.stabilityIntervalMs ?? STABILITY_INTERVAL_MS;
   let lastText = "";
@@ -115,6 +120,7 @@ export async function waitForGenerationComplete(page: Page, baseline: TurnBaseli
     textStableForMs: 0,
     sendVisible: false,
   };
+  let lastObservedText: string | undefined;
   while (Date.now() < deadline) {
     ensureConnected(page);
     if (await isClaudeSecurityVerificationVisible(page)) {
@@ -148,9 +154,16 @@ export async function waitForGenerationComplete(page: Page, baseline: TurnBaseli
       }
     }
     const textStableForMs = stableSince === undefined ? 0 : Date.now() - stableSince;
+    if (timingEnabled) {
+      const elapsed = Date.now() - timingStartedAt;
+      console.log(`[claude completion] t=${elapsed}ms active=${generationActiveVisible} textLength=${normalizedCandidate.length} stableFor=${textStableForMs}`);
+      if (lastObservedText !== undefined && lastObservedText !== normalizedCandidate) console.log(`[claude completion] t=${elapsed}ms text changed`);
+      lastObservedText = normalizedCandidate;
+    }
     lastDiagnostics = { generationActiveVisible, newResponseFound, textLength: normalizedCandidate.length, textStableForMs, sendVisible };
     await sleep(pollInterval);
   }
+  if (timingEnabled) console.log(`[claude completion] timeout at t=${Date.now() - timingStartedAt}ms active=${lastDiagnostics.generationActiveVisible} textLength=${lastDiagnostics.textLength} stableFor=${lastDiagnostics.textStableForMs}`);
   return {
     outcome: "timeout",
     partialText: await readNewAssistantText(page, claudeSelectors.assistantMessage, baseline, claudeSelectors.assistantResponseText) ?? "",

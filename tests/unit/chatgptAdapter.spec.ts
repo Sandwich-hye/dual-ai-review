@@ -2,6 +2,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { test, expect } from "@playwright/test";
 import { captureChatGPTTurnBaseline, getLatestAssistantResponse, sendPrompt, waitForGenerationComplete, waitForGenerationStart } from "../../src/sites/chatgptSite";
+import { normalizeLogicalText, readProseMirrorLogicalText } from "../../src/browser/domUtil";
 
 const fixture = pathToFileURL(path.resolve("tests/fixtures/fakeChat.html")).href;
 
@@ -88,4 +89,24 @@ test("a visible generation control prevents completion even with stable text", a
     expect(result.diagnostics.textLength).toBeGreaterThan(0);
     expect(result.diagnostics.sendVisible).toBe(true);
   }
+});
+
+test("reconstructs ChatGPT ProseMirror blocks including an intentional blank line", async ({ page }) => {
+  await page.setContent('<div id="editor" class="ProseMirror" contenteditable="true"><p>first line</p><p><br></p><p>second line</p><p>---</p><p>- item A</p><p>- item B</p></div>');
+  expect(normalizeLogicalText(await readProseMirrorLogicalText(page.locator("#editor")))).toBe("first line\n\nsecond line\n---\n- item A\n- item B");
+});
+
+test("verifies a realistic multiline revision prompt once and submits once without keydown", async ({ page }) => {
+  await page.setContent('<div id="composer" class="ProseMirror" contenteditable="true" role="textbox"></div><button id="send" data-testid="send-button">Send</button><script>window.submits=0;window.keys=0;composer.addEventListener("keydown",()=>window.keys++);send.addEventListener("click",()=>{window.submits++;composer.textContent="";});</script>');
+  const prompt = ["Original task:", "---", "TASK", "---", "", "Your previous ChatGPT answer:", "---", "G0", "---", "", "Latest Claude review:", "---", "C1", "---", "", "Return a COMPLETE revised, standalone answer.", "Return the answer itself, not commentary about the review, not a change log, and not STATUS output."].join("\n");
+  await sendPrompt(page, prompt);
+  expect(await page.evaluate(() => (window as unknown as { submits: number }).submits)).toBe(1);
+  expect(await page.evaluate(() => (window as unknown as { keys: number }).keys)).toBe(0);
+});
+
+test("logical verification failure fails safely without a second insertion or submit", async ({ page }) => {
+  await page.setContent('<div id="composer" class="ProseMirror" contenteditable="true" role="textbox"></div><button id="send" data-testid="send-button">Send</button><script>window.inputs=0;window.submits=0;composer.addEventListener("input",()=>{window.inputs++;composer.textContent="mismatch";});send.addEventListener("click",()=>window.submits++);</script>');
+  await expect(sendPrompt(page, "LINE_1\n\nLINE_2")).rejects.toMatchObject({ code: "submission_failed" });
+  expect(await page.evaluate(() => (window as unknown as { inputs: number }).inputs)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => (window as unknown as { submits: number }).submits)).toBe(0);
 });

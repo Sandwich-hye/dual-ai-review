@@ -1,4 +1,4 @@
-﻿import { Locator, Page } from "playwright";
+import { Locator, Page } from "playwright";
 import { TurnBaseline } from "../sites/siteTypes";
 
 export async function firstVisible(page: Page, selectors: readonly string[]): Promise<Locator | undefined> {
@@ -46,12 +46,14 @@ export async function readProseMirrorLogicalText(locator: Locator): Promise<stri
       if (element.tagName.toLowerCase() === "br") return "\n";
       return Array.from(element.childNodes).map(readNode).join("");
     };
-    const blocks = Array.from(node.children);
+    const blocks = Array.from(node.childNodes).filter(item => item.nodeType === Node.TEXT_NODE || item.nodeType === Node.ELEMENT_NODE);
     if (blocks.length === 0) return node.textContent ?? "";
     return blocks.map(block => {
-      const hasOnlyBreak = block.children.length === 1
-        && block.firstElementChild?.tagName.toLowerCase() === "br"
-        && (block.textContent ?? "") === "";
+      if (block.nodeType === Node.TEXT_NODE) return block.textContent ?? "";
+      const element = block as Element;
+      const hasOnlyBreak = element.children.length === 1
+        && element.firstElementChild?.tagName.toLowerCase() === "br"
+        && (element.textContent ?? "") === "";
       return hasOnlyBreak ? "" : readNode(block);
     }).join("\n");
   });
