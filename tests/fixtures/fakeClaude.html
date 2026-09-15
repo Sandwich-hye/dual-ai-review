@@ -1,0 +1,57 @@
+﻿<!doctype html>
+<html><body>
+<nav id="sidebar-nav">
+  <a data-row data-row-key="chat:old" data-row-main-button><span>Old conversation title</span></a>
+</nav>
+<header id="chat-header"><span class="chat-title-split">Current conversation title</span></header>
+<main id="conversation">
+  <article role="article" data-message-id="old-claude-1" data-is-streaming="false"><div data-cds="Prose"><div data-perf-reply-text>Old Claude response</div></div><div class="controls"><button aria-label="Copy">Copy</button></div></article>
+  <article role="article" data-message-id="user-1" data-is-streaming="false"><div data-cds="Prose">User message without response marker</div></article>
+</main>
+<div id="claude-composer" class="ProseMirror" contenteditable="true" role="textbox" aria-label="Reply to Claude"></div>
+<button id="claude-send" data-testid="send-message" aria-label="Send message">Send</button>
+<button id="claude-stop" data-testid="stop-generating" aria-label="Stop generating" hidden>Stop</button>
+<div id="security" data-testid="security-check" hidden>Cloudflare security verification</div>
+<script>
+const mode = new URLSearchParams(location.search).get("mode") || "normal";
+const composer = document.querySelector("#claude-composer"), send = document.querySelector("#claude-send"), stop = document.querySelector("#claude-stop"), conversation = document.querySelector("#conversation"), security = document.querySelector("#security");
+let sequence = 0;
+function assistant(id, text) {
+  const node = document.createElement("article");
+  node.setAttribute("role", "article");
+  node.dataset.messageId = id;
+  node.dataset.isStreaming = "true";
+  node.innerHTML = '<div data-cds="Prose"><div data-perf-reply-text></div></div><div class="controls"><button aria-label="Copy">Copy</button><button aria-label="Read aloud">Read aloud</button><button aria-label="Retry">Retry</button></div>';
+  node.querySelector("[data-perf-reply-text]").textContent = text;
+  conversation.appendChild(node);
+  return node;
+}
+function busy(value) {
+  stop.hidden = !value;
+  send.disabled = value;
+  conversation.querySelectorAll('[role="article"]').forEach(article => {
+    article.dataset.isStreaming = String(value);
+  });
+}
+send.addEventListener("click", () => {
+  if (!composer.textContent.trim() || mode === "reject") return;
+  composer.textContent = ""; busy(true);
+  if (mode === "security") { security.hidden = false; return; }
+  if (mode === "never") return;
+  const id = "new-claude-" + (++sequence);
+  setTimeout(() => {
+    if (mode === "multi") { assistant(id + "-a", "first"); assistant(id + "-b", "second"); busy(false); return; }
+    if (mode === "visible-stop") { assistant(id, "stable Claude response"); return; }
+    const node = assistant(id, mode === "empty" ? "" : mode === "changing" ? "Claude stream one" : "stable Claude response");
+    if (mode === "changing") {
+      setTimeout(() => node.querySelector("[data-perf-reply-text]").textContent = "Claude stream one Claude stream two", 120);
+      setTimeout(() => node.querySelector("[data-perf-reply-text]").textContent = "stable Claude response", 240);
+      setTimeout(() => { node.dataset.isStreaming = "false"; busy(false); }, 420);
+    } else setTimeout(() => { node.dataset.isStreaming = "false"; busy(false); if (mode === "no-send") send.remove(); }, 220);
+  }, 120);
+});
+if (mode === "security") security.hidden = false;
+</script>
+</body></html>
+
+

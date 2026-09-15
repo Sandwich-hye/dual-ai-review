@@ -8,6 +8,8 @@
     "build": "tsc",
     "start": "node dist/src/main.js",
     "smoke:chatgpt": "npm run build && node dist/scripts/smoke-chatgpt.js",
+    "smoke:claude": "npm run build && node dist/scripts/smoke-claude.js",
+    "inspect:claude": "npm run build && node dist/scripts/inspect-claude-dom.js",
     "test": "playwright test"
   },
   "dependencies": {

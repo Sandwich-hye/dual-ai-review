@@ -1,4 +1,4 @@
-import { Locator, Page } from "playwright";
+﻿import { Locator, Page } from "playwright";
 import { TurnBaseline } from "../sites/siteTypes";
 
 export async function firstVisible(page: Page, selectors: readonly string[]): Promise<Locator | undefined> {
@@ -28,7 +28,7 @@ export async function countForSelectorGroup(page: Page, selectors: readonly stri
 function normalize(value: string): string {
   return value.replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
-async function messageNodes(page: Page, selectors: readonly string[]): Promise<{ id: string; text: string }[]> {
+async function messageNodes(page: Page, selectors: readonly string[], textSelector?: string): Promise<{ id: string; text: string }[]> {
   for (const selector of selectors) {
     const locator = page.locator(selector);
     const count = await locator.count().catch(() => 0);
@@ -39,7 +39,9 @@ async function messageNodes(page: Page, selectors: readonly string[]): Promise<{
       const stableId = await node.getAttribute("data-message-id").catch(() => null)
         ?? await node.getAttribute("data-testid").catch(() => null)
         ?? await node.getAttribute("id").catch(() => null);
-      const text = normalize((await node.innerText().catch(() => node.textContent().catch(() => "") ?? "")) ?? "");
+      const text = normalize(textSelector
+        ? (await node.locator(textSelector).allInnerTexts().catch(() => [] as string[])).join("\n")
+        : ((await node.innerText().catch(() => node.textContent().catch(() => "") ?? "")) ?? ""));
       messages.push({ id: stableId ? "stable:" + stableId : "index:" + index, text });
     }
     return messages;
@@ -56,17 +58,18 @@ export class AmbiguousNewMessageError extends Error {
     this.name = "AmbiguousNewMessageError";
   }
 }
-export async function resolveNewAssistantMessage(page: Page, selectors: readonly string[], baseline: TurnBaseline): Promise<string> {
-  const messages = await messageNodes(page, selectors);
+export async function resolveNewAssistantMessage(page: Page, selectors: readonly string[], baseline: TurnBaseline, textSelector?: string): Promise<string> {
+  const messages = await messageNodes(page, selectors, textSelector);
   const newMessages = messages.filter(message => !baseline.ids.has(message.id));
   if (newMessages.length !== 1) throw new AmbiguousNewMessageError(newMessages.length);
   return newMessages[0].text;
 }
-export async function readNewAssistantText(page: Page, selectors: readonly string[], baseline: TurnBaseline): Promise<string | undefined> {
-  const messages = await messageNodes(page, selectors);
+export async function readNewAssistantText(page: Page, selectors: readonly string[], baseline: TurnBaseline, textSelector?: string): Promise<string | undefined> {
+  const messages = await messageNodes(page, selectors, textSelector);
   const newMessages = messages.filter(message => !baseline.ids.has(message.id));
   return newMessages.length === 1 ? newMessages[0].text : undefined;
 }
 export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
