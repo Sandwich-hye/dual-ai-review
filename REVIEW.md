@@ -1,5 +1,11 @@
 # Phase 1 Final Review
 
+## Milestone 3 status
+
+Milestone 3 is complete. Real browser verification passed for both `npm run smoke:claude-long-prompt` and `npm run smoke:single-round` against the real ChatGPT and Claude web UIs. The single-round flow completed the automatic task → ChatGPT response → Claude review → Claude response handoff. Milestone 4 has not started.
+
+The final Claude implementation decisions and the non-blocking observation about reusing the existing Claude conversation are recorded in `DECISIONS.md` and `PHASE2_DESIGN.md`.
+
 Reviewer: independent final-review pass (Claude), 2026-09-15. Read SPEC.md, TODO.md,
 DECISIONS.md in full, inspected every file listed in the review request, independently
 re-ran `npm run build` (passes, no errors) and `npm test` (18 passed, 0 failed — matches

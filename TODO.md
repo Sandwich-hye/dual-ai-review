@@ -1,7 +1,7 @@
-# TODO.md 鈥?dual-ai-review
+# TODO.md 閳?dual-ai-review
 
 This file is the persistent source of truth for project progress. It must always reflect
-the actual, verified state of the repository 鈥?not intentions, not "should be working."
+the actual, verified state of the repository 閳?not intentions, not "should be working."
 
 **Rules for every future agent (human or AI) editing this file:**
 
@@ -12,18 +12,18 @@ the actual, verified state of the repository 鈥?not intentions, not "should be 
 3. If something is discovered broken or incomplete, uncheck it (with a note in "Blocked /
    Issues") rather than leaving a stale checkmark.
 4. If new required work is discovered, add it under the relevant phase (or to "Blocked /
-   Issues" if it's a cross-cutting problem) 鈥?don't just fix it silently.
+   Issues" if it's a cross-cutting problem) 閳?don't just fix it silently.
 5. Read `SPEC.md` and `DECISIONS.md` before changing any code, not just this file.
 
 ---
 
 ## Current Phase
 
-**Phase 1 鈥?Browser Foundation** (implementation complete; attach-mode workflow verified against real sites; pending final freeze decision 鈥?see REVIEW.md)
+**Phase 2A — Milestone 3 complete** (real ChatGPT-to-Claude single-round flow verified; Milestone 4 not started)
 
 ---
 
-## Phase 1 鈥?Browser Foundation
+## Phase 1 閳?Browser Foundation
 
 ### Setup
 - [x] Initialize `package.json` (Node + TypeScript project)
@@ -31,72 +31,72 @@ the actual, verified state of the repository 鈥?not intentions, not "should be 
 - [x] Add `tsconfig.json`
 - [x] Add `.gitignore` covering `.browser-profile/`, `logs/`, `node_modules/`,
       `test-results/`, `playwright-report/`
-- [x] Create `config/config.json` with the Phase 1 schema from `SPEC.md` 搂11
+- [x] Create `config/config.json` with the Phase 1 schema from `SPEC.md` 鎼?1
 
 ### Core modules
-- [x] `src/logging/logger.ts` 鈥?console + file logger
-- [x] `src/config/loadConfig.ts` 鈥?load + validate `config/config.json`
-- [x] `src/browser/launchBrowser.ts` 鈥?persistent context launch (profile dir, headed,
+- [x] `src/logging/logger.ts` 閳?console + file logger
+- [x] `src/config/loadConfig.ts` 閳?load + validate `config/config.json`
+- [x] `src/browser/launchBrowser.ts` 閳?persistent context launch (profile dir, headed,
       timeouts)
-- [x] `src/browser/shutdown.ts` 鈥?clean close on success / error / SIGINT / SIGTERM
-- [x] `src/sites/siteTypes.ts` 鈥?`SiteAdapter` / `SiteLoadResult` shared types
-- [x] `src/sites/siteRegistry.ts` 鈥?Phase 1 site list (chatgpt, claude)
-- [x] `src/sites/openSite.ts` 鈥?generic navigate + readiness-check routine
-- [x] `src/sites/chatgptSite.ts` 鈥?ChatGPT URL + readiness detector only
-- [x] `src/sites/claudeSite.ts` 鈥?Claude URL + readiness detector only
-- [x] `src/main.ts` 鈥?composition root wiring the above together, including the
-      interactive login-wait flow (SPEC.md 搂8a)
+- [x] `src/browser/shutdown.ts` 閳?clean close on success / error / SIGINT / SIGTERM
+- [x] `src/sites/siteTypes.ts` 閳?`SiteAdapter` / `SiteLoadResult` shared types
+- [x] `src/sites/siteRegistry.ts` 閳?Phase 1 site list (chatgpt, claude)
+- [x] `src/sites/openSite.ts` 閳?generic navigate + readiness-check routine
+- [x] `src/sites/chatgptSite.ts` 閳?ChatGPT URL + readiness detector only
+- [x] `src/sites/claudeSite.ts` 閳?Claude URL + readiness detector only
+- [x] `src/main.ts` 閳?composition root wiring the above together, including the
+      interactive login-wait flow (SPEC.md 鎼?a)
 
 ### Behavior
 - [ ] Launch opens ChatGPT and Claude each in their own page within the same persistent
       context
 - [ ] The persistent context uses a dedicated, project-local `userDataDir` (default
-      `.browser-profile/`) 鈥?never the user's normal daily Chrome profile directory, even
-      when `channel: "chrome"` is used (SPEC.md 搂8)
+      `.browser-profile/`) 閳?never the user's normal daily Chrome profile directory, even
+      when `channel: "chrome"` is used (SPEC.md 鎼?)
 - [x] Readiness detector classifies each site as one of: `ready`, `login_required`,
       `unknown_state`, `navigation_failed`
 - [x] Failure on one site does not prevent the other site's attempt
 - [ ] Interactive login-wait flow: if either site is `login_required` after initial
       detection, the browser stays open, a clear console message is printed, the process
       blocks on ENTER, then readiness is re-checked for both sites and the new
-      classifications are logged (SPEC.md 搂8a)
-- [ ] Login-wait flow never automates username/password/OTP/SSO/CAPTCHA entry 鈥?waits for
+      classifications are logged (SPEC.md 鎼?a)
+- [ ] Login-wait flow never automates username/password/OTP/SSO/CAPTCHA entry 閳?waits for
       the human only
 - [ ] Screenshot is saved on `unknown_state` / `navigation_failed`
 - [ ] Timestamped log file written per run under `logs/`
 - [ ] Browser/context closes cleanly on normal exit, thrown error, and SIGINT/SIGTERM
 
-### Tests 鈥?A. Automated / local (no dependency on real ChatGPT/Claude sites; SPEC.md 搂14A)
-- [x] `tests/fixtures/` 鈥?local static HTML fixtures for `ready`, `login_required`, and
+### Tests 閳?A. Automated / local (no dependency on real ChatGPT/Claude sites; SPEC.md 鎼?4A)
+- [x] `tests/fixtures/` 閳?local static HTML fixtures for `ready`, `login_required`, and
       unknown page states
-- [x] `tests/unit/config.spec.ts` (or similar) 鈥?config loading/validation, including
+- [x] `tests/unit/config.spec.ts` (or similar) 閳?config loading/validation, including
       malformed/missing-field error cases
-- [x] `tests/unit/logging.spec.ts` 鈥?log format, console + file output, file non-empty
+- [x] `tests/unit/logging.spec.ts` 閳?log format, console + file output, file non-empty
       after a logged event
-- [x] `tests/unit/siteLoadResult.spec.ts` 鈥?readiness detector returns correct
+- [x] `tests/unit/siteLoadResult.spec.ts` 閳?readiness detector returns correct
       classification against each local fixture
-- [x] `tests/unit/openSite.spec.ts` 鈥?one invalid/unreachable "site" + one valid fixture
-      "site" 鈫?failure isolation proven without touching real sites
-- [x] `tests/unit/shutdown.spec.ts` 鈥?context closes cleanly on normal run and on a
+- [x] `tests/unit/openSite.spec.ts` 閳?one invalid/unreachable "site" + one valid fixture
+      "site" 閳?failure isolation proven without touching real sites
+- [x] `tests/unit/shutdown.spec.ts` 閳?context closes cleanly on normal run and on a
       simulated mid-run error
-- [x] `tests/unit/browserDiscovery.spec.ts` 鈥?attach-mode hostname matching (chatgpt.com,
+- [x] `tests/unit/browserDiscovery.spec.ts` 閳?attach-mode hostname matching (chatgpt.com,
       chat.openai.com, claude.ai) correctly selects existing tabs and ignores unrelated
       hosts
 - [x] Automated suite passes locally without network access to chatgpt.com or claude.ai
 
-### Tests 鈥?B. Manual / integration (real sites; SPEC.md 搂14B; not part of core automated suite)
+### Tests 閳?B. Manual / integration (real sites; SPEC.md 鎼?4B; not part of core automated suite)
 - [x] `tests/manual/phase1.real-sites.md` checklist written
-- [ ] Manual test: fresh dedicated profile 鈫?login-wait flow triggers 鈫?manual login 鈫?      ENTER 鈫?both sites classified `ready`
-- [x] Manual test: second run with same profile 鈫?both sites `ready` **without** the
+- [ ] Manual test: fresh dedicated profile 閳?login-wait flow triggers 閳?manual login 閳?      ENTER 閳?both sites classified `ready`
+- [x] Manual test: second run with same profile 閳?both sites `ready` **without** the
       login-wait flow triggering and **without** a re-login prompt (persistence proof)
-- [ ] Manual test: one site URL broken in config, run against the real other site 鈫?other
+- [ ] Manual test: one site URL broken in config, run against the real other site 閳?other
       site still loads and logs correctly (real-world isolation proof)
-- [ ] Manual test: Ctrl+C mid-run 鈫?no orphaned browser process, no locked profile dir on
+- [ ] Manual test: Ctrl+C mid-run 閳?no orphaned browser process, no locked profile dir on
       next run
 - [ ] Manual test: confirm resolved `userDataDir` is the dedicated automation profile, not
       the user's daily Chrome profile
 
-### Phase 1 Acceptance Criteria (mirrors SPEC.md 搂13 鈥?check off only after verifying)
+### Phase 1 Acceptance Criteria (mirrors SPEC.md 鎼?3 閳?check off only after verifying)
 - [ ] Single persistent Chromium context launches from a project-local profile dir
 - [x] Session persists across two consecutive runs (no re-login)
 - [x] ChatGPT load outcome correctly classified and logged
@@ -115,9 +115,9 @@ the actual, verified state of the repository 鈥?not intentions, not "should be 
 
 ---
 
-## Future Phase 2 鈥?ChatGPT Adapter
+## Future Phase 2 閳?ChatGPT Adapter
 
-### Phase 2A 鈥?Milestone 1: ChatGPT send + wait + latest-response detection
+### Phase 2A 閳?Milestone 1: ChatGPT send + wait + latest-response detection
 - [x] Add shared DOM utilities and isolated ChatGPT selector fallback groups
 - [x] Capture a pre-send `TurnBaseline` and resolve only the new assistant response
 - [x] Send prompts through the existing attached ChatGPT page and verify submission
@@ -125,7 +125,7 @@ the actual, verified state of the repository 鈥?not intentions, not "should be 
 - [x] Handle composer, submission, timeout, empty-response, login, unknown-state, and disconnect failures
 - [x] Add offline fake-chat fixture and adapter/baseline tests; keep all Phase 1 tests passing
 - [x] Perform the manual real-ChatGPT Milestone 1 smoke test (not part of automated tests)
-### Phase 2A 鈥?Milestone 2: Claude send + wait + latest-response detection
+### Phase 2A 閳?Milestone 2: Claude send + wait + latest-response detection
 - [x] Add Claude-specific selector fallback groups and extend the Claude adapter
 - [x] Capture a pre-send Claude `TurnBaseline` and resolve only the new assistant response
 - [x] Send prompts through the existing attached Claude page and verify submission
@@ -133,6 +133,15 @@ the actual, verified state of the repository 鈥?not intentions, not "should be 
 - [x] Handle Claude login, security verification, unknown state, composer, submission, timeout, empty-response, ambiguity, and disconnect failures
 - [x] Add offline fake-Claude fixture and adapter tests; keep all prior tests passing
 - [x] Perform the manual real-Claude Milestone 2 smoke test (not part of automated tests)
+
+### Phase 2A - Milestone 3: One automatic ChatGPT to Claude round
+- [x] Add a browser-agnostic one-round coordinator using the conversational adapter interface
+- [x] Build and send the first Claude review prompt from the original task and new ChatGPT response
+- [x] Capture exactly one new completed response from each site and stop after Claude's first review
+- [x] Add offline fake-adapter coordinator tests covering order, handoff content, and safe failures
+- [x] Add a manual real-site single-round smoke harness
+- [x] Perform the manual real ChatGPT to Claude Milestone 3 smoke test (not part of automated tests)
+
   Verified against the existing attached Claude tab: existing-tab discovery, prompt
   submission, generation-start detection, generation-completion detection, and
   current-turn response extraction all passed. Verified DOM lesson: the assistant
@@ -141,15 +150,15 @@ the actual, verified state of the repository 鈥?not intentions, not "should be 
   `[data-is-streaming="true"]`.
 
 
-- [ ] **GATE / BLOCKER 鈥?do not implement automatic ChatGPT response extraction until
+- [ ] **GATE / BLOCKER 閳?do not implement automatic ChatGPT response extraction until
       this is satisfied.** OpenAI's current consumer Terms of Use prohibit automatically
       or programmatically extracting data or Output from the ChatGPT consumer web
       interface. Before writing `extractLatestResponse` (or any equivalent scraping of
       ChatGPT's generated output): (1) re-evaluate OpenAI's then-current service terms on
       automated/programmatic Output extraction, and (2) choose and document a compliant
-      approach 鈥?e.g. an official supported API/integration, a human-in-the-loop relay
+      approach 閳?e.g. an official supported API/integration, a human-in-the-loop relay
       (user manually copies the response in), or another officially sanctioned mechanism.
-      See `DECISIONS.md` 搂10 for full rationale. This does not block or change any Phase 1
+      See `DECISIONS.md` 鎼?0 for full rationale. This does not block or change any Phase 1
       work, which never extracts output.
 - [ ] Extend `chatgptSite.ts` into a full adapter: `sendMessage(page, text)`
 - [ ] Implement `extractLatestResponse(page)` for ChatGPT *(blocked by the gate above)*
@@ -158,7 +167,7 @@ the actual, verified state of the repository 鈥?not intentions, not "should be 
       banner) without leaking that knowledge outside `chatgptSite.ts`
 - [ ] Adapter-level tests for send + extract against a logged-in session
 
-## Future Phase 3 鈥?Claude Adapter
+## Future Phase 3 閳?Claude Adapter
 
 - [ ] Extend `claudeSite.ts` into a full adapter: `sendMessage(page, text)`
 - [ ] Implement `extractLatestResponse(page)` for Claude
@@ -166,16 +175,16 @@ the actual, verified state of the repository 鈥?not intentions, not "should be 
 - [ ] Handle Claude-specific transient UI states without leaking outside `claudeSite.ts`
 - [ ] Adapter-level tests for send + extract against a logged-in session
 
-## Future Phase 4 鈥?Orchestrator
+## Future Phase 4 閳?Orchestrator
 
-- [ ] `src/orchestrator/` module driving propose 鈫?review 鈫?revise loop via the shared
+- [ ] `src/orchestrator/` module driving propose 閳?review 閳?revise loop via the shared
       `SiteAdapter` interface only
-- [ ] Configurable max rounds (default within 10鈥?5 range)
+- [ ] Configurable max rounds (default within 10閳?5 range)
 - [ ] Round counting and per-round transcript capture
 - [ ] Generous, configurable per-step timeouts (web UI latency is unpredictable)
 - [ ] Graceful handling when an adapter reports `unknown_state` mid-orchestration
 
-## Future Phase 5 鈥?State / Convergence
+## Future Phase 5 閳?State / Convergence
 
 - [ ] `src/state/` module: OPEN vs RESOLVED issue tracking, separate from orchestrator
       control flow
@@ -185,27 +194,27 @@ the actual, verified state of the repository 鈥?not intentions, not "should be 
 - [ ] Resume: reload persisted state and continue from the correct round
 - [ ] Manual intervention: allow a human to edit/inject content between rounds
 
-## Future Phase 6 鈥?User Interface and Robustness
+## Future Phase 6 閳?User Interface and Robustness
 
 - [ ] Structured, queryable logs (beyond Phase 1's plain log file) covering rounds/issues
 - [ ] Recovery from browser/UI failures mid-session (e.g. site reload, re-detect
       readiness, resume orchestration)
 - [ ] Multiple review/debate modes (strict review, brainstorm, adversarial, etc.)
 - [ ] Modular support for additional AI web interfaces (adapter interface already
-      designed for this in Phase 1 鈥?implement additional `*Site.ts` adapters)
-- [ ] Consider a minimal local UI (only if justified 鈥?avoid overengineering per project
+      designed for this in Phase 1 閳?implement additional `*Site.ts` adapters)
+- [ ] Consider a minimal local UI (only if justified 閳?avoid overengineering per project
       guidance)
 
 ---
 
 ## Blocked / Issues
 
-- Phase 1: none currently 鈥?implementation has not started.
+- Phase 1: none currently 閳?implementation has not started.
 - **Future Phase 2 (standing gate, not blocking Phase 1):** automatic ChatGPT response
   extraction cannot be implemented until OpenAI's current consumer Terms of Use around
   automated/programmatic Output extraction are re-evaluated and a compliant approach is
-  chosen and documented. See the GATE item under "Future Phase 2 鈥?ChatGPT Adapter" above
-  and `DECISIONS.md` 搂10.
+  chosen and documented. See the GATE item under "Future Phase 2 閳?ChatGPT Adapter" above
+  and `DECISIONS.md` 鎼?0.
 
 
 ### Manual Chrome attach mode (Phase 1)
@@ -214,5 +223,7 @@ the actual, verified state of the repository 鈥?not intentions, not "should be 
 - [x] Preserve browser ownership: only launch mode closes the browser
 - [x] Add dedicated Chrome startup script using `.browser-profile`
 - [x] Manual attach-mode real-site test personally verified
+
+
 
 

@@ -704,3 +704,16 @@ conversation titles, and user messages by the response-text descendant. The comp
 check combines the Claude streaming state with the existing new-response, non-empty,
 and text-stability safeguards.
 
+
+## 17. Verified Milestone 3 real-site result
+
+Milestone 3 passed against the real ChatGPT and Claude web UIs in the existing attached
+Chrome session. The long-prompt smoke test preserved one complete multiline Claude review
+prompt, submitted once, identified the new user turn, waited for generation, and extracted
+Claude's review. The single-round smoke test verified the automatic handoff:
+original task → ChatGPT response → Claude review prompt → Claude review response.
+
+The final Claude implementation decisions are recorded in DECISIONS.md. Repeated smoke
+tests reuse the existing Claude conversation, so Claude may refer to the same input being
+repeated (for example, “same input a fourth time”). This is non-blocking for Milestone 3
+correctness; conversation/run isolation remains a later design concern.

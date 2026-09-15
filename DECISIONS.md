@@ -274,3 +274,19 @@ and user messages do not qualify as assistant messages because they lack the res
 descendant. Completion continues to require the existing new-message, non-empty, and
 text-stability safeguards.
 
+
+### 11d. Final Claude Milestone 3 implementation decisions
+
+- Multiline input uses Playwright `fill()`, not keyboard Enter simulation.
+- Claude's ProseMirror composer verification reconstructs logical text from top-level
+  blocks; `<p><br></p>` represents an intentional blank line.
+- Submission uses one explicit Send button click.
+- Claude user turns are positively identified using the user Edit control. Assistant turns
+  use `[data-perf-reply-text]`; assistant placeholder shells do not count as user turns.
+- Long or collapsed user messages do not require exact full visible-text matching.
+- `TurnBaseline` is captured so existing messages are excluded.
+
+Repeated smoke tests currently reuse the existing Claude conversation. Claude may therefore
+say things such as “same input a fourth time.” This is non-blocking and did not affect
+Milestone 3 correctness. Conversation/run isolation should be considered for later
+multi-round and persistence behavior; it is not implemented as part of this closeout.

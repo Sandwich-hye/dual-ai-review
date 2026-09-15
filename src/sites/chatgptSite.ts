@@ -1,4 +1,4 @@
-import { Page } from "playwright";
+﻿import { Page } from "playwright";
 import { AmbiguousNewMessageError, captureTurnBaseline, countForSelectorGroup, firstVisible, firstVisibleEnabled, hasVisible, readNewAssistantText, resolveNewAssistantMessage, sleep } from "../browser/domUtil";
 import { chatgptSelectors } from "./selectors/chatgptSelectors";
 import { ConversationalSiteAdapter, GenerationOutcome, GenerationStartResult, SiteAdapter, SiteLoadStatus, TurnBaseline } from "./siteTypes";
@@ -161,5 +161,6 @@ export async function getLatestAssistantResponse(page: Page, baseline: TurnBasel
   return normalized;
 }
 export function createChatGPTConversationalAdapter(url: string): ConversationalSiteAdapter {
-  return { name: "chatgpt", url, checkReady: checkChatGPTReady, sendPrompt, waitForGenerationStart, waitForGenerationComplete, getLatestAssistantResponse };
+  return { name: "chatgpt", url, checkReady: checkChatGPTReady, captureTurnBaseline: captureChatGPTTurnBaseline, sendPrompt, waitForGenerationStart, waitForGenerationComplete, getLatestAssistantResponse };
 }
+

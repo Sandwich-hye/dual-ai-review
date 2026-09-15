@@ -9,7 +9,14 @@
     "start": "node dist/src/main.js",
     "smoke:chatgpt": "npm run build && node dist/scripts/smoke-chatgpt.js",
     "smoke:claude": "npm run build && node dist/scripts/smoke-claude.js",
+    "smoke:claude-long-prompt": "npm run build && node dist/scripts/smoke-claude-long-prompt.js",
     "inspect:claude": "npm run build && node dist/scripts/inspect-claude-dom.js",
+    "inspect:claude-composer": "npm run build && node dist/scripts/inspect-claude-composer.js",
+    "inspect:claude-pages": "npm run build && node dist/scripts/inspect-claude-pages.js",
+    "inspect:claude-submission": "npm run build && node dist/scripts/inspect-claude-submission.js",
+    "inspect:claude-message-roles": "npm run build && node dist/scripts/inspect-claude-message-roles.js",
+    "test:claude-submit": "npm run build && node dist/scripts/test-claude-submit.js",
+    "smoke:single-round": "npm run build && node dist/scripts/smoke-single-round.js",
     "test": "playwright test"
   },
   "dependencies": {
@@ -21,3 +28,9 @@
     "typescript": "^5.7.0"
   }
 }
+
+
+
+
+
+

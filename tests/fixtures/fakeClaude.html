@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html><body>
 <nav id="sidebar-nav">
   <a data-row data-row-key="chat:old" data-row-main-button><span>Old conversation title</span></a>
@@ -16,6 +16,13 @@
 const mode = new URLSearchParams(location.search).get("mode") || "normal";
 const composer = document.querySelector("#claude-composer"), send = document.querySelector("#claude-send"), stop = document.querySelector("#claude-stop"), conversation = document.querySelector("#conversation"), security = document.querySelector("#security");
 let sequence = 0;
+let submitCount = 0;
+const submittedPrompts = [];
+window.__claudeFixture = {
+  get submitCount() { return submitCount; },
+  get submittedPrompts() { return submittedPrompts.slice(); },
+  get userTurnCount() { return conversation.querySelectorAll("[data-user-turn]").length; }
+};
 function assistant(id, text) {
   const node = document.createElement("article");
   node.setAttribute("role", "article");
@@ -33,9 +40,29 @@ function busy(value) {
     article.dataset.isStreaming = String(value);
   });
 }
+composer.addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    send.click();
+  }
+});
 send.addEventListener("click", () => {
   if (!composer.textContent.trim() || mode === "reject") return;
-  composer.textContent = ""; busy(true);
+  submitCount += 1;
+  const blocks = Array.from(composer.children);
+  const logicalPrompt = blocks.length === 0
+    ? composer.textContent
+    : blocks.map(block => block.children.length === 1 && block.firstElementChild?.tagName.toLowerCase() === "br" ? "" : block.textContent ?? "").join("\n");
+  submittedPrompts.push(logicalPrompt.trim());
+  composer.textContent = "";
+  const userTurn = document.createElement("article");
+  userTurn.setAttribute("role", "article");
+  userTurn.setAttribute("aria-label", "Message " + (conversation.querySelectorAll('[role="article"]').length + 1) + " of 2");
+  userTurn.className = "rounded-lg bg-gray-100";
+  userTurn.dataset.userTurn = "true";
+  userTurn.innerHTML = '<div class="whitespace-pre-wrap break-words"><p>' + submittedPrompts[submittedPrompts.length - 1] + '</p><button aria-label="Show more">Show more</button><button aria-label="Edit">Edit</button></div>';
+  conversation.appendChild(userTurn);
+  busy(true);
   if (mode === "security") { security.hidden = false; return; }
   if (mode === "never") return;
   const id = "new-claude-" + (++sequence);
@@ -53,5 +80,9 @@ send.addEventListener("click", () => {
 if (mode === "security") security.hidden = false;
 </script>
 </body></html>
+
+
+
+
 
 

@@ -28,7 +28,34 @@ export async function countForSelectorGroup(page: Page, selectors: readonly stri
 function normalize(value: string): string {
   return value.replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
-async function messageNodes(page: Page, selectors: readonly string[], textSelector?: string): Promise<{ id: string; text: string }[]> {
+export function normalizeLogicalText(value: string): string {
+  return value
+    .replace(/\r\n?/g, "\n")
+    .replace(/\u00a0/g, " ")
+    .split("\n")
+    .map(line => line.replace(/[ \t]+$/g, ""))
+    .join("\n")
+    .trim();
+}
+export async function readProseMirrorLogicalText(locator: Locator): Promise<string> {
+  return locator.evaluate(node => {
+    const readNode = (item: Node): string => {
+      if (item.nodeType === Node.TEXT_NODE) return item.textContent ?? "";
+      if (item.nodeType !== Node.ELEMENT_NODE) return "";
+      const element = item as Element;
+      if (element.tagName.toLowerCase() === "br") return "\n";
+      return Array.from(element.childNodes).map(readNode).join("");
+    };
+    const blocks = Array.from(node.children);
+    if (blocks.length === 0) return node.textContent ?? "";
+    return blocks.map(block => {
+      const hasOnlyBreak = block.children.length === 1
+        && block.firstElementChild?.tagName.toLowerCase() === "br"
+        && (block.textContent ?? "") === "";
+      return hasOnlyBreak ? "" : readNode(block);
+    }).join("\n");
+  });
+}async function messageNodes(page: Page, selectors: readonly string[], textSelector?: string): Promise<{ id: string; text: string }[]> {
   for (const selector of selectors) {
     const locator = page.locator(selector);
     const count = await locator.count().catch(() => 0);
@@ -72,4 +99,5 @@ export async function readNewAssistantText(page: Page, selectors: readonly strin
 export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
 

@@ -1,5 +1,5 @@
 ﻿import { Page } from "playwright";
-import { AmbiguousNewMessageError, captureTurnBaseline, countForSelectorGroup, firstVisible, firstVisibleEnabled, hasVisible, readNewAssistantText, resolveNewAssistantMessage, sleep } from "../browser/domUtil";
+import { AmbiguousNewMessageError, captureTurnBaseline, countForSelectorGroup, firstVisible, firstVisibleEnabled, hasVisible, normalizeLogicalText, readNewAssistantText, readProseMirrorLogicalText, resolveNewAssistantMessage, sleep } from "../browser/domUtil";
 import { claudeSelectors } from "./selectors/claudeSelectors";
 import { ConversationalSiteAdapter, GenerationOutcome, GenerationStartResult, SiteAdapter, SiteLoadStatus, TurnBaseline } from "./siteTypes";
 
@@ -43,6 +43,9 @@ function ensureConnected(page: Page): void {
 function textValue(value: string): string {
   return value.replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ").trim();
 }
+function composerTextValue(value: string): string {
+  return value.replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+}
 export async function captureClaudeTurnBaseline(page: Page): Promise<TurnBaseline> {
   ensureConnected(page);
   return captureTurnBaseline(page, claudeSelectors.assistantMessage);
@@ -59,13 +62,20 @@ export async function sendPrompt(page: Page, prompt: string): Promise<void> {
   if (!composer) throw new ClaudeComposerNotFoundError();
   await composer.click().catch(() => { throw new ClaudeSubmissionError("Could not focus the Claude composer"); });
   await composer.fill(prompt).catch(() => undefined);
-  let entered = textValue((await composer.innerText().catch(() => composer.textContent().catch(() => "") ?? "")) ?? "");
-  if (!entered.includes(textValue(prompt))) {
-    await composer.fill("").catch(() => undefined);
-    await composer.pressSequentially(prompt).catch(() => { throw new ClaudeSubmissionError("Could not enter prompt into Claude composer"); });
-    entered = textValue((await composer.innerText().catch(() => composer.textContent().catch(() => "") ?? "")) ?? "");
+  const normalizedPrompt = normalizeLogicalText(prompt);
+  let entered = normalizeLogicalText(await readProseMirrorLogicalText(composer));
+  if (entered !== normalizedPrompt) {
+    await composer.evaluate((element, value) => {
+      element.textContent = value as string;
+      element.dispatchEvent(new InputEvent("input", {
+        bubbles: true,
+        inputType: "insertText",
+        data: value as string,
+      }));
+    }, prompt).catch(() => { throw new ClaudeSubmissionError("Could not enter prompt into Claude composer"); });
+    entered = normalizeLogicalText(await readProseMirrorLogicalText(composer));
   }
-  if (!entered.includes(textValue(prompt))) throw new ClaudeSubmissionError("Claude composer did not contain the submitted prompt");
+  if (entered !== normalizedPrompt) throw new ClaudeSubmissionError("Claude composer did not contain the submitted prompt");
   const sendButton = await firstVisibleEnabled(page, claudeSelectors.sendButton);
   if (sendButton) await sendButton.click().catch(() => { throw new ClaudeSubmissionError("Claude send button could not be clicked"); });
   else await composer.press("Enter").catch(() => { throw new ClaudeSubmissionError("Claude composer could not be submitted"); });
@@ -161,6 +171,10 @@ export async function getLatestAssistantResponse(page: Page, baseline: TurnBasel
   return normalized;
 }
 export function createClaudeConversationalAdapter(url: string): ConversationalSiteAdapter {
-  return { name: "claude", url, checkReady: checkClaudeReady, sendPrompt, waitForGenerationStart, waitForGenerationComplete, getLatestAssistantResponse };
+  return { name: "claude", url, checkReady: checkClaudeReady, captureTurnBaseline: captureClaudeTurnBaseline, sendPrompt, waitForGenerationStart, waitForGenerationComplete, getLatestAssistantResponse };
 }
+
+
+
+
 

@@ -1,8 +1,9 @@
-﻿import path from "node:path";
+import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { test, expect } from "@playwright/test";
 import { ClaudeEmptyResponseError, captureClaudeTurnBaseline, getLatestAssistantResponse, sendPrompt, waitForGenerationComplete, waitForGenerationStart } from "../../src/sites/claudeSite";
-import { AmbiguousNewMessageError } from "../../src/browser/domUtil";
+import { AmbiguousNewMessageError, normalizeLogicalText, readProseMirrorLogicalText } from "../../src/browser/domUtil";
+import { countVisibleClaudeUserMessages } from "../../src/sites/claudeUserTurns";
 
 const fixture = pathToFileURL(path.resolve("tests/fixtures/fakeClaude.html")).href;
 
@@ -148,4 +149,80 @@ test("ignores sidebar titles, chat headers, and user articles", async ({ page })
 });
 
 
+
+
+const longReviewPrompt = [
+  "You are the reviewer.",
+  "",
+  "Original task:",
+  "---",
+  "Give exactly three practical benefits of automated software testing.",
+  "---",
+  "",
+  "ChatGPT's proposed answer:",
+  "---",
+  "1. Faster feedback",
+  "2. Fewer regressions",
+  "3. Reduced manual effort",
+  "---",
+  "",
+  "Review the proposed answer.",
+  "",
+  "Identify:",
+  "- factual or logical errors",
+  "- missing requirements",
+  "- implementation risks",
+  "- unnecessary complexity",
+].join("\n");
+
+test("inserts a multiline Claude prompt as one user turn without Enter submissions", async ({ page }) => {
+  await page.goto(fixture);
+  const baseline = await captureClaudeTurnBaseline(page);
+  await sendPrompt(page, longReviewPrompt);
+
+  const fixtureState = await page.evaluate(() => {
+    const state = (window as unknown as { __claudeFixture: { submitCount: number; submittedPrompts: string[]; userTurnCount: number } }).__claudeFixture;
+    return { submitCount: state.submitCount, submittedPrompts: state.submittedPrompts, userTurnCount: state.userTurnCount, composerText: document.querySelector("#claude-composer")?.textContent ?? "" };
+  });
+  expect(fixtureState.submitCount).toBe(1);
+  expect(fixtureState.userTurnCount).toBe(1);
+  expect(fixtureState.submittedPrompts).toEqual([longReviewPrompt]);
+  expect(fixtureState.composerText).toBe("");
+  expect(await waitForGenerationStart(page, baseline)).toBe("started");
+});
+
+
+test("reconstructs ProseMirror paragraph blocks and intentional blank lines", async ({ page }) => {
+  await page.setContent('<div id="editor" class="ProseMirror" contenteditable="true"><p>first paragraph</p><p><br></p><p>second paragraph</p><p>---</p><p>- bullet A</p><p>- bullet B</p></div>');
+  const logical = await readProseMirrorLogicalText(page.locator("#editor"));
+  expect(logical).toBe("first paragraph\n\nsecond paragraph\n---\n- bullet A\n- bullet B");
+});
+
+test("detects genuinely truncated logical composer content", async ({ page }) => {
+  await page.setContent('<div id="editor" class="ProseMirror" contenteditable="true"><p>first paragraph</p><p><br></p><p>second paragraph</p></div>');
+  const logical = normalizeLogicalText(await readProseMirrorLogicalText(page.locator("#editor")));
+  const expected = normalizeLogicalText("first paragraph\n\nsecond paragraph\n---\n- bullet A\n- bullet B");
+  expect(logical).not.toBe(expected);
+});
+
+
+test("counts structural Claude user turns without confusing assistant articles", async ({ page }) => {
+  await page.setContent('<main><article role="article" aria-label="Message 1 of 2"><p>collapsed long user message</p><button aria-label="Show more">Show more</button><button aria-label="Edit">Edit</button></article><article role="article" aria-label="Message 2 of 2"><div data-perf-reply-text>assistant response</div></article></main>');
+  expect(await countVisibleClaudeUserMessages(page)).toBe(1);
+  await page.locator("main").evaluate(node => {
+    node.insertAdjacentHTML("beforeend", '<article role="article"><p>new user turn</p><button aria-label="Edit">Edit</button></article>');
+  });
+  expect(await countVisibleClaudeUserMessages(page)).toBe(2);  await page.locator("main").evaluate(node => {
+    node.insertAdjacentHTML("beforeend", '<article role="article"><div>assistant generating placeholder</div></article>');
+  });
+  expect(await countVisibleClaudeUserMessages(page)).toBe(2);
+  await page.locator("main article").last().evaluate(node => {
+    node.innerHTML = '<div data-perf-reply-text>completed response</div>';
+  });
+  expect(await countVisibleClaudeUserMessages(page)).toBe(2);
+  await page.locator("main").evaluate(node => {
+    node.insertAdjacentHTML("beforeend", '<article role="article"><p>unexpected second user turn</p><button aria-label="Edit">Edit</button></article>');
+  });
+  expect(await countVisibleClaudeUserMessages(page)).toBe(3);
+});
 
