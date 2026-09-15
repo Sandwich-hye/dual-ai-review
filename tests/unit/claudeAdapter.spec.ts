@@ -103,12 +103,13 @@ test("login/security states stop safely", async ({ page }) => {
   await expect(sendPrompt(page, "do not login")).rejects.toMatchObject({ code: "login_required" });
 });
 
-test("uses Claude index fallback when stable IDs are unavailable", async ({ page }) => {
-  await page.setContent("<section id='conversation'><article role='article' data-message-id='old' data-is-streaming='false'><div data-perf-reply-text>old</div></article></section><div class='ProseMirror' contenteditable='true' role='textbox'></div>");
+test("uses Claude ordinal identity when stable IDs are unavailable", async ({ page }) => {
+  await page.setContent("<section id='conversation'><article role='article' aria-label='Message 1 of 2' data-message-id='old' data-is-streaming='false'><div data-perf-reply-text>old</div></article></section><div class='ProseMirror' contenteditable='true' role='textbox'></div>");
   const baseline = await captureClaudeTurnBaseline(page);
   await page.locator("#conversation").evaluate(node => {
     const item = document.createElement("article");
     item.setAttribute("role", "article");
+    item.setAttribute("aria-label", "Message 3 of 3");
     item.dataset.messageId = "new";
     item.dataset.isStreaming = "false";
     item.innerHTML = '<div data-perf-reply-text>new Claude response</div>';
@@ -117,6 +118,23 @@ test("uses Claude index fallback when stable IDs are unavailable", async ({ page
   expect(await getLatestAssistantResponse(page, baseline)).toBe("new Claude response");
 });
 
+test("keeps the new Claude assistant identity across virtualized remounts", async ({ page }) => {
+  await page.setContent('<main id="conversation"><article role="article" aria-label="Message 2 of 12"><div data-perf-reply-text>old two</div></article><article role="article" aria-label="Message 10 of 12"><div data-perf-reply-text>old ten</div></article><div class="ProseMirror" contenteditable="true" role="textbox"></div></main><button aria-label="Stop generating" hidden>Stop</button>');
+  const baseline = await captureClaudeTurnBaseline(page);
+  expect([...baseline.ids]).toEqual(["message:2", "message:10"]);
+  await page.locator("#conversation").evaluate(node => { node.insertAdjacentHTML("beforeend", '<article role="article" aria-label="Message 12 of 12"><div data-perf-reply-text>abc</div></article>'); });
+  expect(await waitForGenerationStart(page, baseline, { pollIntervalMs: 20 })).toBe("started");
+  await page.locator("#conversation").evaluate(node => { node.innerHTML = '<article role="article" aria-label="Message 10 of 12"><div data-perf-reply-text>old ten</div></article><article role="article" aria-label="Message 12 of 12"><div data-perf-reply-text>abcdef</div></article>'; });
+  expect(await getLatestAssistantResponse(page, baseline)).toBe("abcdef");
+  await page.locator("#conversation").evaluate(node => { node.innerHTML = '<article role="article" aria-label="Message 2 of 14"><div data-perf-reply-text>old two</div></article><article role="article" aria-label="Message 12 of 14"><div data-perf-reply-text>complete</div></article>'; });
+  expect((await waitForGenerationComplete(page, baseline, 1000, { pollIntervalMs: 40, stabilityIntervalMs: 80 })).outcome).toBe("complete");
+  expect(await getLatestAssistantResponse(page, baseline)).toBe("complete");
+});
+
+test("fails safely when a Claude assistant ordinal is unparseable", async ({ page }) => {
+  await page.setContent('<main><article role="article" aria-label="not a Message ordinal"><div data-perf-reply-text>response</div></article></main>');
+  await expect(captureClaudeTurnBaseline(page)).rejects.toMatchObject({ code: "response_detection_failed" });
+});
 test("does not guess when Claude appends multiple new responses", async ({ page }) => {
   await page.goto(fixture + "?mode=multi");
   const baseline = await captureClaudeTurnBaseline(page);
@@ -141,6 +159,7 @@ test("scopes extraction to response text and excludes controls", async ({ page }
   await page.locator("#conversation").evaluate(node => {
     const item = document.createElement("article");
     item.setAttribute("role", "article");
+    item.setAttribute("aria-label", "Message 3 of 3");
     item.dataset.messageId = "scoped";
     item.dataset.isStreaming = "false";
     item.innerHTML = '<div data-cds="Prose"><div data-perf-reply-text>Only response text</div></div><button>Copy</button><button>Read aloud</button><button>Retry</button>';

@@ -1,8 +1,8 @@
 import { chromium, Page } from "playwright";
 import { discoverSitePages } from "../src/browser/discoverSitePages";
-import { captureClaudeTurnBaseline, checkClaudeReady } from "../src/sites/claudeSite";
+import { captureClaudeTurnBaseline, checkClaudeReady, claudeMessageIdentity, readClaudeNewAssistantText } from "../src/sites/claudeSite";
 import { claudeSelectors } from "../src/sites/selectors/claudeSelectors";
-import { hasVisible, readNewAssistantText } from "../src/browser/domUtil";
+import { hasVisible } from "../src/browser/domUtil";
 import { TurnBaseline } from "../src/sites/siteTypes";
 
 const CDP_ENDPOINT = "http://127.0.0.1:9222";
@@ -21,12 +21,12 @@ async function visibleElements(page: Page, selector: string): Promise<ElementRep
 }
 async function selectorReport(page: Page, selector: string): Promise<Record<string, unknown>> { const locator = page.locator(selector); return { selector, totalMatches: await locator.count().catch(() => 0), visibleMatches: (await visibleElements(page, selector)).length, visibleElements: await visibleElements(page, selector) }; }
 async function latestAssistant(page: Page): Promise<Record<string, unknown> | null> {
-  for (const selector of claudeSelectors.assistantMessage) { const locator = page.locator(selector); if (await locator.count().catch(() => 0) === 0) continue; return locator.last().evaluate((node, selectorName) => { const response = node.querySelector("[data-perf-reply-text]")?.textContent ?? ""; return { selector: selectorName, ariaLabel: node.getAttribute("aria-label") ?? "", containsPerfReplyText: node.querySelector("[data-perf-reply-text]") !== null, responseTextLength: response.length, first100NormalizedCharacters: response.replace(/\\r\\n?/g, "\\n").replace(/\\u00a0/g, " ").replace(/[ \\t]+/g, " ").replace(/\\n+/g, " ").trim().slice(0, 100), dataIsStreaming: node.getAttribute("data-is-streaming"), dataMessageId: node.getAttribute("data-message-id") }; }, selector); }
+  for (const selector of claudeSelectors.assistantMessage) { const locator = page.locator(selector); if (await locator.count().catch(() => 0) === 0) continue; return locator.last().evaluate((node, selectorName) => { const response = node.querySelector("[data-perf-reply-text]")?.textContent ?? ""; return { selector: selectorName, ariaLabel: node.getAttribute("aria-label") ?? "", containsPerfReplyText: node.querySelector("[data-perf-reply-text]") !== null, responseTextLength: response.length, first100NormalizedCharacters: response.replace(/\\r\\n?/g, "\\n").replace(/\\u00a0/g, " ").replace(/[ \\t]+/g, " ").replace(/\\n+/g, " ").trim().slice(0, 100), dataIsStreaming: node.getAttribute("data-is-streaming"), stableIdentity: claudeMessageIdentity(node.getAttribute("aria-label")) }; }, selector); }
   return null;
 }
-async function diagnosticBaselineForLatest(page: Page): Promise<TurnBaseline> { const baseline = await captureClaudeTurnBaseline(page); const latest = await latestAssistant(page); if (!latest || baseline.count === 0) return baseline; const latestId = latest.dataMessageId ? "stable:" + latest.dataMessageId : "index:" + (baseline.count - 1); return { count: baseline.count - 1, ids: new Set([...baseline.ids].filter(id => id !== latestId)) }; }
+async function diagnosticBaselineForLatest(page: Page): Promise<TurnBaseline> { const baseline = await captureClaudeTurnBaseline(page); const latest = await latestAssistant(page); if (!latest || baseline.count === 0) return baseline; const latestId = latest.stableIdentity as string | undefined; if (!latestId) return baseline; return { count: baseline.count - 1, ids: new Set([...baseline.ids].filter(id => id !== latestId)) }; }
 async function sample(page: Page, baseline: TurnBaseline, previousLength: number | undefined): Promise<Record<string, unknown>> {
-  const generationActiveVisible = await hasVisible(page, claudeSelectors.stopGenerating); const candidate = await readNewAssistantText(page, claudeSelectors.assistantMessage, baseline, claudeSelectors.assistantResponseText); const length = normalize(candidate ?? "").length; const latest = await latestAssistant(page);
+  const generationActiveVisible = await hasVisible(page, claudeSelectors.stopGenerating); const candidate = await readClaudeNewAssistantText(page, baseline); const length = normalize(candidate ?? "").length; const latest = await latestAssistant(page);
   return { normalizedResponseTextLength: length, responseTextChangedSincePreviousSample: previousLength === undefined ? null : length !== previousLength, generationActiveVisible, dataIsStreaming: latest?.dataIsStreaming ?? null, assistantArticleCount: await page.locator(claudeSelectors.assistantMessage[0]).count().catch(() => 0), newAssistantResponseExists: candidate !== undefined, productionCompletionPredicate: { noNewAssistantResponse: candidate === undefined, emptyText: length === 0, generationActiveStillVisible: generationActiveVisible, textStableLongEnough: false, other: "A single sample cannot establish the 700 ms stability interval." } };
 }
 async function run(): Promise<number> {

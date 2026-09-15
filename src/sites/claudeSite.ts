@@ -1,5 +1,5 @@
-import { Page } from "playwright";
-import { AmbiguousNewMessageError, captureTurnBaseline, firstVisible, firstVisibleEnabled, hasVisible, normalizeLogicalText, readNewAssistantText, readProseMirrorLogicalText, resolveNewAssistantMessage, sleep } from "../browser/domUtil";
+import { Locator, Page } from "playwright";
+import { AmbiguousNewMessageError, firstVisible, firstVisibleEnabled, hasVisible, normalizeLogicalText, readProseMirrorLogicalText, sleep } from "../browser/domUtil";
 import { claudeSelectors } from "./selectors/claudeSelectors";
 import { ConversationalSiteAdapter, GenerationOutcome, GenerationStartResult, SiteAdapter, SiteLoadStatus, TurnBaseline } from "./siteTypes";
 
@@ -46,9 +46,39 @@ function textValue(value: string): string {
 function composerTextValue(value: string): string {
   return value.replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
+export function claudeMessageIdentity(ariaLabel: string | null): string | undefined {
+  const match = ariaLabel?.match(/^Message\s+(\d+)\s+of\s+\d+$/i);
+  return match ? `message:${match[1]}` : undefined;
+}
+
+async function mountedClaudeAssistantMessages(page: Page): Promise<Array<{ id: string; locator: Locator }>> {
+  for (const selector of claudeSelectors.assistantMessage) {
+    const locator = page.locator(selector);
+    const count = await locator.count().catch(() => 0);
+    if (count === 0) continue;
+    const messages: Array<{ id: string; locator: Locator }> = [];
+    for (let index = 0; index < count; index += 1) {
+      const item = locator.nth(index);
+      const id = claudeMessageIdentity(await item.getAttribute("aria-label").catch(() => null));
+      if (!id) throw new ClaudeOperationError("response_detection_failed", `Claude assistant article ${index + 1} has no parseable Message ordinal`);
+      messages.push({ id, locator: item });
+    }
+    return messages;
+  }
+  return [];
+}
+
+export async function readClaudeNewAssistantText(page: Page, baseline: TurnBaseline): Promise<string | undefined> {
+  const messages = await mountedClaudeAssistantMessages(page);
+  const newMessages = messages.filter(message => !baseline.ids.has(message.id));
+  if (newMessages.length > 1) throw new AmbiguousNewMessageError(newMessages.length);
+  if (newMessages.length === 0) return undefined;
+  return (await newMessages[0].locator.locator(claudeSelectors.assistantResponseText).allInnerTexts().catch(() => [])).join("\n");
+}
 export async function captureClaudeTurnBaseline(page: Page): Promise<TurnBaseline> {
   ensureConnected(page);
-  return captureTurnBaseline(page, claudeSelectors.assistantMessage);
+  const messages = await mountedClaudeAssistantMessages(page);
+  return { count: messages.length, ids: new Set(messages.map(message => message.id)) };
 }
 export async function sendPrompt(page: Page, prompt: string): Promise<void> {
   ensureConnected(page);
@@ -96,7 +126,7 @@ export async function waitForGenerationStart(page: Page, baseline: TurnBaseline,
     ensureConnected(page);
     if (await isClaudeSecurityVerificationVisible(page)) throw new ClaudeOperationError("security_verification", "Claude security verification appeared; recover manually");
     const generationActiveVisible = await hasVisible(page, claudeSelectors.stopGenerating);
-    const newAssistantResponse = await readNewAssistantText(page, claudeSelectors.assistantMessage, baseline, claudeSelectors.assistantResponseText);
+    const newAssistantResponse = await readClaudeNewAssistantText(page, baseline);
     if (generationActiveVisible || newAssistantResponse !== undefined) return "started";
     await sleep(options.pollIntervalMs ?? POLL_INTERVAL_MS);
   }
@@ -129,7 +159,7 @@ export async function waitForGenerationComplete(page: Page, baseline: TurnBaseli
     const banner = await firstVisible(page, claudeSelectors.errorBanner);
     if (banner) return { outcome: "error_banner", detail: textValue(await banner.innerText().catch(() => "Claude reported an error")) };
     const generationActiveVisible = await hasVisible(page, claudeSelectors.stopGenerating);
-    const candidate = await readNewAssistantText(page, claudeSelectors.assistantMessage, baseline, claudeSelectors.assistantResponseText);
+    const candidate = await readClaudeNewAssistantText(page, baseline);
     const normalizedCandidate = candidate?.trim() ?? "";
     const newResponseFound = candidate !== undefined;
     const sendVisible = await hasVisible(page, claudeSelectors.sendButton);
@@ -166,7 +196,7 @@ export async function waitForGenerationComplete(page: Page, baseline: TurnBaseli
   if (timingEnabled) console.log(`[claude completion] timeout at t=${Date.now() - timingStartedAt}ms active=${lastDiagnostics.generationActiveVisible} textLength=${lastDiagnostics.textLength} stableFor=${lastDiagnostics.textStableForMs}`);
   return {
     outcome: "timeout",
-    partialText: await readNewAssistantText(page, claudeSelectors.assistantMessage, baseline, claudeSelectors.assistantResponseText) ?? "",
+    partialText: await readClaudeNewAssistantText(page, baseline) ?? "",
     diagnostics: lastDiagnostics,
   };
 }
@@ -174,7 +204,9 @@ export async function getLatestAssistantResponse(page: Page, baseline: TurnBasel
   ensureConnected(page);
   let response: string;
   try {
-    response = await resolveNewAssistantMessage(page, claudeSelectors.assistantMessage, baseline, claudeSelectors.assistantResponseText);
+    const detectedResponse = await readClaudeNewAssistantText(page, baseline);
+    if (detectedResponse === undefined) throw new AmbiguousNewMessageError(0);
+    response = detectedResponse;
   } catch (error) {
     if (error instanceof AmbiguousNewMessageError) throw error;
     throw new ClaudeOperationError("response_detection_failed", error instanceof Error ? error.message : String(error));

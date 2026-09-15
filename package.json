@@ -17,6 +17,7 @@
     "inspect:claude-message-roles": "npm run build && node dist/scripts/inspect-claude-message-roles.js",
     "inspect:claude-completion": "npm run build && node dist/scripts/inspect-claude-completion.js",
     "inspect:chatgpt-composer": "npm run build && node dist/scripts/inspect-chatgpt-composer.js",
+    "inspect:chatgpt-message-roles": "npm run build && node dist/scripts/inspect-chatgpt-message-roles.js",
     "test:chatgpt-multiline-insertion": "npm run build && node dist/scripts/test-chatgpt-multiline-insertion.js",
     "test:claude-submit": "npm run build && node dist/scripts/test-claude-submit.js",
     "smoke:single-round": "npm run build && node dist/scripts/smoke-single-round.js",

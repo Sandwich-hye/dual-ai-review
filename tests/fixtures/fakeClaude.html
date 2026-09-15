@@ -5,8 +5,8 @@
 </nav>
 <header id="chat-header"><span class="chat-title-split">Current conversation title</span></header>
 <main id="conversation">
-  <article role="article" data-message-id="old-claude-1" data-is-streaming="false"><div data-cds="Prose"><div data-perf-reply-text>Old Claude response</div></div><div class="controls"><button aria-label="Copy">Copy</button></div></article>
-  <article role="article" data-message-id="user-1" data-is-streaming="false"><div data-cds="Prose">User message without response marker</div></article>
+  <article role="article" aria-label="Message 1 of 2" data-message-id="old-claude-1" data-is-streaming="false"><div data-cds="Prose"><div data-perf-reply-text>Old Claude response</div></div><div class="controls"><button aria-label="Copy">Copy</button></div></article>
+  <article role="article" aria-label="Message 2 of 2" data-message-id="user-1" data-is-streaming="false"><div data-cds="Prose">User message without response marker</div></article>
 </main>
 <div id="claude-composer" class="ProseMirror" contenteditable="true" role="textbox" aria-label="Reply to Claude"></div>
 <button id="claude-send" data-testid="send-message" aria-label="Send message">Send</button>
@@ -26,6 +26,7 @@ window.__claudeFixture = {
 function assistant(id, text) {
   const node = document.createElement("article");
   node.setAttribute("role", "article");
+  node.setAttribute("aria-label", "Message " + (conversation.querySelectorAll('[role="article"]').length + 1) + " of " + (conversation.querySelectorAll('[role="article"]').length + 1));
   node.dataset.messageId = id;
   node.dataset.isStreaming = "true";
   node.innerHTML = '<div data-cds="Prose"><div data-perf-reply-text></div></div><div class="controls"><button aria-label="Copy">Copy</button><button aria-label="Read aloud">Read aloud</button><button aria-label="Retry">Retry</button></div>';
@@ -61,7 +62,7 @@ send.addEventListener("click", () => {
   composer.textContent = "";
   const userTurn = document.createElement("article");
   userTurn.setAttribute("role", "article");
-  userTurn.setAttribute("aria-label", "Message " + (conversation.querySelectorAll('[role="article"]').length + 1) + " of 2");
+  userTurn.setAttribute("aria-label", "Message " + (conversation.querySelectorAll('[role="article"]').length + 1) + " of " + (conversation.querySelectorAll('[role="article"]').length + 1));
   userTurn.className = "rounded-lg bg-gray-100";
   userTurn.dataset.userTurn = "true";
   userTurn.innerHTML = '<div class="whitespace-pre-wrap break-words"><p>' + submittedPrompts[submittedPrompts.length - 1] + '</p><button aria-label="Show more">Show more</button><button aria-label="Edit">Edit</button></div>';
