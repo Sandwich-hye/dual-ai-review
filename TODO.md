@@ -19,7 +19,7 @@ the actual, verified state of the repository 閳?not intentions, not "should be 
 
 ## Current Phase
 
-**Phase 2A — Milestone 4A complete** (fixed two-round real ChatGPT-to-Claude flow verified); Milestone 4B has not started.
+**Phase 2A — Milestone 4A complete** (fixed two-round real ChatGPT-to-Claude flow verified); **Milestone 4B design revised after a convergence-safety architect review** (see `MILESTONE4B_DESIGN.md`), implementation not started.
 
 ---
 
@@ -175,6 +175,71 @@ implemented and verified):
 - [ ] Perform the manual real-site Milestone 4A smoke test and record the result in
       `DECISIONS.md`/`REVIEW.md` (not part of the automated suite)
 - [x] Explicitly confirmed no changes were made to `chatgptSite.ts`, `claudeSite.ts`, `claudeUserTurns.ts`, `domUtil.ts`, or any selector file
+
+### Phase 2A - Milestone 4B: Convergence-driven review loop (design revised after architect review round 2; implementation not started)
+
+See `MILESTONE4B_DESIGN.md` for the full design, including its "Revision history" section
+documenting the round-2 convergence-safety fixes (single-decision-point round lifecycle,
+conservative objection matching, severity floor/downgrade rules, strict ledger-id
+validation, the JSON structured-review grammar, and corrected maxRounds semantics). Planned
+tasks (do not check off until implemented and verified):
+
+- [ ] Add `src/orchestration/convergence/types.ts`: shared convergence/ledger/review types
+      (`ReviewSeverity`, `ObjectionLedgerEntry` incl. `highestSeveritySeen`,
+      `StructuredClaudeReview`, `ConvergenceOptions` incl. the fingerprint merge/margin/
+      shared-token/candidate thresholds, `ConvergenceDecision`, `ConvergenceHistory`,
+      `ConvergedReviewResult`, `ConvergenceRoundRecord`)
+- [ ] Add `src/orchestration/convergence/fingerprint.ts`: deterministic normalization +
+      Dice-coefficient similarity, plus the conservative merge-classification function
+      (high absolute score AND a clear margin over the next-best candidate AND a minimum
+      shared-token count — see `MILESTONE4B_DESIGN.md` section 6.5); no LLM calls, no
+      network access
+- [ ] Add `src/orchestration/convergence/structuredReviewParser.ts`: sentinel-wrapped JSON
+      parser (`BEGIN_STRUCTURED_REVIEW`/`END_STRUCTURED_REVIEW`) with strict schema
+      validation and the full ledger-id cross-validation checklist in
+      `MILESTONE4B_DESIGN.md` section 7.2 (unknown id in any bucket, id in contradictory
+      buckets, duplicate id within a bucket, non-empty id arrays in round 1); malformed
+      input must never parse into anything convergence-shaped, only a valid
+      `StructuredClaudeReview` or an explicit `{ invalid: true; reason }`
+- [ ] Add `src/orchestration/convergence/objectionLedger.ts`: ledger creation + per-round
+      ingest (RESOLVED/STILL_OPEN/REOPENED by id, NEW objections classified via the
+      conservative matching policy, unmentioned-OPEN objections default to
+      IMPLICITLY_CARRIED_OPEN), plus the severity downgrade-rejection and reopen-floor
+      rules in `MILESTONE4B_DESIGN.md` section 6.6
+- [ ] Add `src/orchestration/convergence/convergenceEngine.ts`: pure, browser-agnostic
+      decision function implementing the single-decision-point round lifecycle and the
+      corrected clean-round/stability-window rule (`MILESTONE4B_DESIGN.md` sections 5, 8);
+      no Playwright/DOM/site-specific code of any kind
+- [ ] Add `src/orchestration/convergence/convergencePrompts.ts`: Claude review prompt
+      (round 1 vs round N with open-ledger summary, JSON structured-review contract) and
+      ChatGPT revision prompt builders per `MILESTONE4B_DESIGN.md` section 11
+- [ ] Add `src/orchestration/runConvergenceReviewLoop.ts`: new orchestration entry point,
+      depends only on `ConversationalSiteAdapter`; single per-round decision point
+      (CONVERGED / MAX_ROUNDS_REACHED / CONTINUE, in that priority order) right after each
+      Claude review, per `MILESTONE4B_DESIGN.md` section 5; does not modify or branch
+      inside `runFixedReviewLoop.ts`/`fixedReviewPrompts.ts` or any other Milestone 4A file
+- [ ] Add `tests/unit/structuredReviewParser.spec.ts`, `objectionLedger.spec.ts`,
+      `convergenceEngine.spec.ts`, `convergencePrompts.spec.ts` covering the full test plan
+      in `MILESTONE4B_DESIGN.md` section 15 (original 16-case matrix plus the added
+      conservative-matching, severity-rule, ledger-id-validation, and JSON-grammar cases)
+- [ ] Add `tests/unit/runConvergenceReviewLoop.spec.ts` (fake in-memory adapters, no
+      Playwright) covering full-loop convergence, max-rounds, invalid-review stops, the
+      no-duplicate-send invariant on failure, and the four explicit state-machine sequence
+      tests in `MILESTONE4B_DESIGN.md` section 15.6 (clean-round-then-converge,
+      streak-reset-on-new-MEDIUM, clean-round-that-resolves-the-final-blocker, and
+      maxRounds-with-no-unreviewed-trailing-revision)
+- [ ] Add a dedicated isolation test (e.g. `tests/unit/convergenceEngineIsolation.spec.ts`)
+      proving no file under `src/orchestration/convergence/` imports `playwright` or
+      references `Page`
+- [ ] Add `scripts/smoke-convergence.ts` + `npm run smoke:convergence` real-site smoke
+      script (not part of the automated suite; run manually against the real attached
+      ChatGPT/Claude tabs once implemented)
+- [ ] Perform the manual real-site Milestone 4B smoke test and record the result in
+      `DECISIONS.md`/`REVIEW.md`
+- [ ] Explicitly confirm no changes were made to `chatgptSite.ts`, `claudeSite.ts`,
+      `claudeUserTurns.ts`, `domUtil.ts`, any selector file, or any Milestone 4A file
+      (`runFixedReviewLoop.ts`, `fixedReviewPrompts.ts`, their tests, or
+      `scripts/smoke-multi-round.ts`)
 
 - [ ] **GATE / BLOCKER 閳?do not implement automatic ChatGPT response extraction until
       this is satisfied.** OpenAI's current consumer Terms of Use prohibit automatically
