@@ -51,7 +51,7 @@ export function claudeMessageIdentity(ariaLabel: string | null): string | undefi
   return match ? `message:${match[1]}` : undefined;
 }
 
-async function mountedClaudeAssistantMessages(page: Page): Promise<Array<{ id: string; locator: Locator }>> {
+async function mountedClaudeAssistantMessages(page: Page, allowTransient: boolean): Promise<Array<{ id: string; locator: Locator }>> {
   for (const selector of claudeSelectors.assistantMessage) {
     const locator = page.locator(selector);
     const count = await locator.count().catch(() => 0);
@@ -60,7 +60,7 @@ async function mountedClaudeAssistantMessages(page: Page): Promise<Array<{ id: s
     for (let index = 0; index < count; index += 1) {
       const item = locator.nth(index);
       const id = claudeMessageIdentity(await item.getAttribute("aria-label").catch(() => null));
-      if (!id) throw new ClaudeOperationError("response_detection_failed", `Claude assistant article ${index + 1} has no parseable Message ordinal`);
+      if (!id) { if (allowTransient) continue; throw new ClaudeOperationError("response_detection_failed", `Claude assistant article ${index + 1} has no parseable Message ordinal`); }
       messages.push({ id, locator: item });
     }
     return messages;
@@ -69,7 +69,7 @@ async function mountedClaudeAssistantMessages(page: Page): Promise<Array<{ id: s
 }
 
 export async function readClaudeNewAssistantText(page: Page, baseline: TurnBaseline): Promise<string | undefined> {
-  const messages = await mountedClaudeAssistantMessages(page);
+  const messages = await mountedClaudeAssistantMessages(page, true);
   const newMessages = messages.filter(message => !baseline.ids.has(message.id));
   if (newMessages.length > 1) throw new AmbiguousNewMessageError(newMessages.length);
   if (newMessages.length === 0) return undefined;
@@ -77,7 +77,7 @@ export async function readClaudeNewAssistantText(page: Page, baseline: TurnBasel
 }
 export async function captureClaudeTurnBaseline(page: Page): Promise<TurnBaseline> {
   ensureConnected(page);
-  const messages = await mountedClaudeAssistantMessages(page);
+  const messages = await mountedClaudeAssistantMessages(page, false);
   return { count: messages.length, ids: new Set(messages.map(message => message.id)) };
 }
 export async function sendPrompt(page: Page, prompt: string): Promise<void> {

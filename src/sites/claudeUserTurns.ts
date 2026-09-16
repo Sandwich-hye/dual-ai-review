@@ -2,7 +2,7 @@ import { Page } from "playwright";
 
 // Live Claude user turns expose an Edit action; assistant articles expose response actions instead.
 // This positive signal avoids counting transient assistant shells before response text exists.
-export const claudeUserMessageSelector = '[role="article"]:has(button[aria-label="Edit"], [role="button"][aria-label="Edit"])';
+export const claudeUserMessageSelector = '[role="article"][data-testid="user-message"], [role="article"]:has([data-testid="user-message"], button[aria-label="Edit"], [role="button"][aria-label="Edit"])';
 
 export async function countVisibleClaudeUserMessages(page: Page): Promise<number> {
   return page.locator(claudeUserMessageSelector).evaluateAll(nodes => nodes.filter(node => {

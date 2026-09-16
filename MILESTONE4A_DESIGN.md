@@ -560,23 +560,29 @@ above, confirm exit code 0 and the `PASSED` banner. Recorded in
 
 ## 13. Acceptance criteria
 
-Milestone 4A implementation (a future session) is done when:
+Milestone 4A implementation and final real-browser verification are complete:
 
-- [ ] `runFixedReviewLoop` exists, depends only on `ConversationalSiteAdapter`, and
+- [x] runFixedReviewLoop exists, depends only on ConversationalSiteAdapter, and
       contains no Playwright selectors.
-- [ ] All 14 unit-test-matrix cases (§10) pass, offline, with no real browser.
-- [ ] `npm test` (existing Playwright-test-runner suite) still passes in full, unchanged,
+- [x] All 14 unit-test-matrix cases (§10) pass, offline, with no real browser.
+- [x] npm test (existing Playwright-test-runner suite) passes in full, unchanged,
       including every Milestone 1–3 spec file.
-- [ ] `npm run smoke:multi-round` passes once against the real, attached ChatGPT and
+- [x] npm run smoke:multi-round passes once against the real, attached ChatGPT and
       Claude tabs with `reviewRounds = 2`, producing the exact five-turn output shape in
       §11 and satisfying both turn-count-delta checks.
-- [ ] No new adapter method, selector, or DOM-reading helper was added to
+- [x] No new adapter method, selector, or DOM-reading helper was added to
       `chatgptSite.ts`/`claudeSite.ts`/`domUtil.ts`.
-- [ ] No tab navigation, tab creation, or tab close was added anywhere in the new code.
+- [x] No tab navigation, tab creation, or tab close was added anywhere in the new code.
 - [ ] `TODO.md` reflects the real, verified state (unchecked until actually implemented
       and verified, per `TODO.md`'s own rules).
 
 ---
+
+### 13a. Final real-browser verification
+
+The final smoke test passed with the exact sequence G0 → C1 → G1 → C2 → G2. It verified ChatGPT initial and final revisions, both Claude reviews, explicit ChatGPT/Claude identities in prompts, the 30,000 ms generation-start timeout, the 180,000 ms generation timeout, no automatic resend after timeout, ProseMirror logical multiline verification, Claude stable message:N identity, Claude DOM virtualization handling, tolerance for transient assistant shells without ordinals during generation, no production DOM-index fallback for Claude identity, and set-based smoke-turn verification rather than raw DOM counts.
+
+Known limitation: independent runs still require manually opening fresh ChatGPT and Claude chats. Milestone 4B has not started.
 
 ## 14. Risks / open questions
 
@@ -595,11 +601,7 @@ Milestone 4A implementation (a future session) is done when:
    question for whoever starts 4B: does `runs/<run-id>/state.json` (from
    `PHASE2_DESIGN.md` §7) become the actual home for this, making a config-file default
    unnecessary permanently?
-3. **Settle-read constants (250 ms × 3 attempts, §9) are unverified against real Claude
-   behavior** — they're a reasonable guess informed by the one observed anomaly, not a
-   number derived from repeated measurement. The real multi-round smoke test (§11) is the
-   first place these constants get exercised against the actual site; they may need
-   tuning after that run.
+3. **Settle-read constants (250 ms × 3 attempts, §9) were exercised by the final real multi-round smoke test.** They remain implementation details that may need tuning if the external sites change.
 4. **No early stop.** By design, the loop always runs the full `reviewRounds` count even
    if Claude's very first review would clearly say the answer is already fine. This is
    correct per the explicit non-goals (§1) but worth flagging so a future reader isn't

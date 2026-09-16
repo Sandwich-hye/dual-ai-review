@@ -135,6 +135,17 @@ test("fails safely when a Claude assistant ordinal is unparseable", async ({ pag
   await page.setContent('<main><article role="article" aria-label="not a Message ordinal"><div data-perf-reply-text>response</div></article></main>');
   await expect(captureClaudeTurnBaseline(page)).rejects.toMatchObject({ code: "response_detection_failed" });
 });
+test("ignores a transient unparseable assistant shell until its ordinal appears", async ({ page }) => {
+  await page.setContent('<main id="conversation"><article role="article" aria-label="Message 2 of 12"><div data-perf-reply-text>old two</div></article><article role="article" aria-label="Message 12 of 12"><div data-perf-reply-text>old twelve</div></article></main><button aria-label="Stop generating">Stop</button>');
+  const baseline = await captureClaudeTurnBaseline(page);
+  await page.locator("#conversation").evaluate(node => { node.insertAdjacentHTML("beforeend", '<article role="article"><div data-perf-reply-text></div></article>'); });
+  expect(await waitForGenerationStart(page, baseline, { pollIntervalMs: 20 })).toBe("started");
+  await page.locator("#conversation").evaluate(node => { node.lastElementChild?.setAttribute("aria-label", "Message 14 of 14"); node.lastElementChild?.querySelector("[data-perf-reply-text]")?.replaceChildren(document.createTextNode("partial")); });
+  await page.locator("button").evaluate(node => { (node as HTMLElement).hidden = true; });
+  await page.locator("#conversation").evaluate(node => { node.lastElementChild?.setAttribute("aria-label", "Message 14 of 16"); });
+  expect((await waitForGenerationComplete(page, baseline, 1200, { pollIntervalMs: 40, stabilityIntervalMs: 80 })).outcome).toBe("complete");
+  expect(await getLatestAssistantResponse(page, baseline)).toBe("partial");
+});
 test("does not guess when Claude appends multiple new responses", async ({ page }) => {
   await page.goto(fixture + "?mode=multi");
   const baseline = await captureClaudeTurnBaseline(page);
@@ -240,6 +251,10 @@ test("detects genuinely truncated logical composer content", async ({ page }) =>
 });
 
 
+test("classifies a Claude user article by data-testid when Edit is not mounted", async ({ page }) => {
+  await page.setContent('<main><article role="article" aria-label="Message 9 of 10" data-testid="user-message"><p>user without Edit</p></article><article role="article" aria-label="Message 10 of 10"><div data-perf-reply-text>assistant</div></article></main>');
+  expect(await countVisibleClaudeUserMessages(page)).toBe(1);
+});
 test("counts structural Claude user turns without confusing assistant articles", async ({ page }) => {
   await page.setContent('<main><article role="article" aria-label="Message 1 of 2"><p>collapsed long user message</p><button aria-label="Show more">Show more</button><button aria-label="Edit">Edit</button></article><article role="article" aria-label="Message 2 of 2"><div data-perf-reply-text>assistant response</div></article></main>');
   expect(await countVisibleClaudeUserMessages(page)).toBe(1);

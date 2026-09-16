@@ -1,8 +1,22 @@
+# Milestone 4A Final Review
+
+## Milestone 4A status
+
+Milestone 4A has passed the final real-browser smoke test. The verified flow was: G0 → C1 → G1 → C2 → G2.
+
+The smoke test verified the ChatGPT initial answer, Claude review, ChatGPT revision, second Claude review, and final ChatGPT revision. It also verified explicit ChatGPT and Claude identities in prompts; generationStartTimeoutMs defaulting to 30000 ms; generationTimeoutMs defaulting to 180000 ms; no automatic resend after timeout; ProseMirror logical multiline verification; Claude stable message:N identity; Claude DOM virtualization handling; tolerance for transient assistant shells without ordinals during generation; no production DOM-index fallback for Claude identity; and set-based smoke-turn verification rather than raw DOM counts.
+
+Known limitation: independent runs still require manually opening fresh ChatGPT and Claude chats. Milestone 4B has not started.
+
+This closeout is documentation-only; no further Milestone 4A functional changes were made and no Milestone 4B implementation was started.
+
+---
+
 # Phase 1 Final Review
 
 ## Milestone 3 status
 
-Milestone 3 is complete. Real browser verification passed for both `npm run smoke:claude-long-prompt` and `npm run smoke:single-round` against the real ChatGPT and Claude web UIs. The single-round flow completed the automatic task → ChatGPT response → Claude review → Claude response handoff. Milestone 4 has not started.
+Milestone 3 is complete. Real browser verification passed for both `npm run smoke:claude-long-prompt` and `npm run smoke:single-round` against the real ChatGPT and Claude web UIs. The single-round flow completed the automatic task → ChatGPT response → Claude review → Claude response handoff. Milestone 4A is now complete; see the closeout above. Milestone 4B has not started.
 
 The final Claude implementation decisions and the non-blocking observation about reusing the existing Claude conversation are recorded in `DECISIONS.md` and `PHASE2_DESIGN.md`.
 

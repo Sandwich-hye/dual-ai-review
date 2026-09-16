@@ -19,9 +19,7 @@ the actual, verified state of the repository 閳?not intentions, not "should be 
 
 ## Current Phase
 
-**Phase 2A — Milestone 3 complete** (real ChatGPT-to-Claude single-round flow verified);
-Milestone 4A architecture/design drafted in `MILESTONE4A_DESIGN.md` (implementation not
-started)
+**Phase 2A — Milestone 4A complete** (fixed two-round real ChatGPT-to-Claude flow verified); Milestone 4B has not started.
 
 ---
 
@@ -152,7 +150,7 @@ started)
   `[data-is-streaming="true"]`.
 
 
-### Phase 2A - Milestone 4A: Fixed multi-round review loop (implementation complete; real smoke pending)
+### Phase 2A - Milestone 4A: Fixed multi-round review loop (implementation and real smoke complete)
 
 See `MILESTONE4A_DESIGN.md` for the full design. Planned tasks (do not check off until
 implemented and verified):
@@ -255,3 +253,8 @@ implemented and verified):
 
 
 
+
+
+Real-browser verification also covered explicit ChatGPT/Claude identities in prompts, the 30,000 ms generation-start timeout and 180,000 ms generation timeout defaults, no automatic resend after timeout, ProseMirror logical multiline verification, Claude stable message:N identity, Claude DOM virtualization handling, tolerance for transient assistant shells without ordinals during generation, no production DOM-index fallback for Claude identity, and set-based smoke-turn verification rather than raw DOM counts.
+
+Known limitation: independent runs still require manually opening fresh ChatGPT and Claude chats.

@@ -290,3 +290,11 @@ Repeated smoke tests currently reuse the existing Claude conversation. Claude ma
 say things such as “same input a fourth time.” This is non-blocking and did not affect
 Milestone 3 correctness. Conversation/run isolation should be considered for later
 multi-round and persistence behavior; it is not implemented as part of this closeout.
+
+### 11e. Verified Milestone 4A multi-round behavior
+
+The final real-browser smoke test passed with the exact sequence G0 → C1 → G1 → C2 → G2: ChatGPT initial answer, Claude review, ChatGPT revision, second Claude review, and final ChatGPT revision. The prompts carried explicit ChatGPT/Claude identities.
+
+The test also verified the 30,000 ms generationStartTimeoutMs default, the 180,000 ms generationTimeoutMs default, no automatic resend after timeout, ProseMirror logical multiline verification, Claude stable message:N identity, Claude DOM virtualization handling, tolerance for transient assistant shells without ordinals during generation, no production DOM-index fallback for Claude identity, and set-based smoke-turn verification instead of raw DOM-count verification.
+
+The known limitation remains: independent runs require the user to manually open fresh ChatGPT and Claude chats. This is accepted for Milestone 4A; Milestone 4B has not started.
