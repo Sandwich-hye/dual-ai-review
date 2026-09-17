@@ -254,6 +254,13 @@ is additionally checked against the **contradiction and duplication rules in §7
 any of the actions above are applied — those checks happen first, as part of validating
 the parsed payload, not as a side effect of ingest.
 
+After fingerprint matching, a `newObjections` entry that resolves to a canonical id already
+explicitly referenced in any of those three buckets is also `INVALID_REVIEW`. This applies
+to RESOLVED + NEW, STILL_OPEN + NEW, and REOPENED + NEW combinations. Processing order must
+never decide whether the canonical entry ends the round resolved or open; the engine rejects
+the review with `newObjections entry fingerprint-matches OBJ-<n>, which is already referenced
+elsewhere in this review`.
+
 ### 6.4 Distinguishing new / repeated / paraphrased / resolved / reopened
 
 | Situation | How it's detected | Classification |
@@ -413,6 +420,9 @@ BEGIN_STRUCTURED_REVIEW
 {
   "reviewStatus": "CONTINUE",
   "resolvedObjectionIds": ["OBJ-1"],
+  "resolutionEvidence": {
+    "OBJ-1": "the revised answer now validates the input before processing it"
+  },
   "stillOpenObjections": [
     { "id": "OBJ-3", "severityOverride": "MEDIUM" }
   ],
@@ -427,6 +437,9 @@ BEGIN_STRUCTURED_REVIEW
 END_STRUCTURED_REVIEW
 ```
 
+`resolutionEvidence` is required. Every `resolvedObjectionId` must have exactly one
+non-empty evidence string. Extra evidence keys for unresolved objections are invalid.
+Evidence is stored for audit; the engine does not semantically judge whether it is true.
 `severityOverride` on `stillOpenObjections`/`reopenedObjections` entries is optional.
 `reviewNotes` is optional. Every other top-level field is required, even if empty
 (`resolvedObjectionIds: []`, `newObjections: []`, etc. — there is no "NONE" sentinel; an
@@ -451,8 +464,9 @@ empty JSON array is the one way to say "nothing in this bucket").
    "multiline reason text" requirements without any bespoke escaping rules.
 3. **Schema validation**, applied to the parsed object:
    - Top level must be a JSON object with **exactly** these keys:
-     `reviewStatus`, `resolvedObjectionIds`, `stillOpenObjections`, `reopenedObjections`,
-     `newObjections` (all required) and `reviewNotes` (optional). Any missing required key
+     `reviewStatus`, `resolvedObjectionIds`, `resolutionEvidence`, `stillOpenObjections`,
+     `reopenedObjections`, `newObjections` (all required) and `reviewNotes` (optional).
+     Any missing required key
      or any key outside this set → invalid (`"missing field <x>"` / `"unknown field <x>"`).
    - `reviewStatus`: string, exactly `"CONTINUE"` or `"CANDIDATE_CONVERGED"` — anything
      else is invalid. This field is **advisory only** (§4, §8) — logged, including a
@@ -460,6 +474,10 @@ empty JSON array is the one way to say "nothing in this bucket").
      decide anything.
    - `resolvedObjectionIds`: array of strings, each matching `/^OBJ-\d+$/`; no duplicate
      strings within the array.
+   - `resolutionEvidence`: required object whose keys are exactly the resolved objection
+     ids and whose values are non-empty strings explaining why each objection is resolved.
+     Missing or extra keys are invalid. Evidence is retained for audit only and is not
+     semantically judged by the engine.
    - `stillOpenObjections`: array of objects, each with required `id` (`/^OBJ-\d+$/`) and
      optional `severityOverride` (`"HIGH"|"MEDIUM"|"LOW"`), no other keys; no duplicate
      `id` within the array.
@@ -812,6 +830,7 @@ BEGIN_STRUCTURED_REVIEW
 {
   "reviewStatus": "CONTINUE" or "CANDIDATE_CONVERGED",
   "resolvedObjectionIds": [],
+  "resolutionEvidence": {},
   "stillOpenObjections": [],
   "reopenedObjections": [],
   "newObjections": [
@@ -858,6 +877,9 @@ BEGIN_STRUCTURED_REVIEW
 {
   "reviewStatus": "CONTINUE" or "CANDIDATE_CONVERGED",
   "resolvedObjectionIds": ["OBJ-1"],
+  "resolutionEvidence": {
+    "OBJ-1": "the revised answer now addresses the cited failure mode"
+  },
   "stillOpenObjections": [{ "id": "OBJ-3" }],
   "reopenedObjections": [],
   "newObjections": [],
