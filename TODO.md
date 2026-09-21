@@ -19,7 +19,7 @@ the actual, verified state of the repository 閳?not intentions, not "should be 
 
 ## Current Phase
 
-**Phase 2A — Milestone 4A complete** (fixed two-round real ChatGPT-to-Claude flow verified); **Milestone 4B.1 (deterministic convergence core) and 4B.2 (convergence prompts + orchestration loop) implemented and unit-verified** (see `MILESTONE4B_DESIGN.md`); Milestone 4B.3 real-browser smoke has not started.
+**Phase 2A — Milestone 4A complete** (fixed two-round real ChatGPT-to-Claude flow verified); **Milestone 4B complete** — 4B.1 (deterministic convergence core), 4B.2 (convergence prompts + orchestration loop), and 4B.3 (real-browser convergence smoke) all implemented and verified (see `MILESTONE4B_DESIGN.md`).
 
 ---
 
@@ -176,7 +176,7 @@ implemented and verified):
       `DECISIONS.md`/`REVIEW.md` (not part of the automated suite)
 - [x] Explicitly confirmed no changes were made to `chatgptSite.ts`, `claudeSite.ts`, `claudeUserTurns.ts`, `domUtil.ts`, or any selector file
 
-### Phase 2A - Milestone 4B: Convergence-driven review loop (4B.1 core + 4B.2 prompts/loop implemented and unit-verified; 4B.3 real-site smoke not started)
+### Phase 2A - Milestone 4B: Convergence-driven review loop (4B.1 core, 4B.2 prompts/loop, and 4B.3 real-site smoke all implemented and verified)
 
 See `MILESTONE4B_DESIGN.md` for the full design, including its "Revision history" section
 documenting the round-2 convergence-safety fixes (single-decision-point round lifecycle,
@@ -231,12 +231,13 @@ tasks (do not check off until implemented and verified):
 - [ ] Add a dedicated isolation test (e.g. `tests/unit/convergenceEngineIsolation.spec.ts`)
       proving no file under `src/orchestration/convergence/` imports `playwright` or
       references `Page`
-- [ ] Add `scripts/smoke-convergence.ts` + `npm run smoke:convergence` real-site smoke
+- [x] Add `scripts/smoke-convergence.ts` + `npm run smoke:convergence` real-site smoke
       script (not part of the automated suite; run manually against the real attached
       ChatGPT/Claude tabs once implemented)
-- [ ] Perform the manual real-site Milestone 4B smoke test and record the result in
-      `DECISIONS.md`/`REVIEW.md`
-- [ ] Explicitly confirm no changes were made to `chatgptSite.ts`, `claudeSite.ts`,
+- [x] Perform the manual real-site Milestone 4B smoke test and record the result in
+      `DECISIONS.md`/`REVIEW.md` — see `DECISIONS.md` §11f and `REVIEW.md`'s Milestone 4B
+      section
+- [x] Explicitly confirm no changes were made to `chatgptSite.ts`, `claudeSite.ts`,
       `claudeUserTurns.ts`, `domUtil.ts`, any selector file, or any Milestone 4A file
       (`runFixedReviewLoop.ts`, `fixedReviewPrompts.ts`, their tests, or
       `scripts/smoke-multi-round.ts`)

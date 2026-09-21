@@ -298,3 +298,18 @@ The final real-browser smoke test passed with the exact sequence G0 → C1 → G
 The test also verified the 30,000 ms generationStartTimeoutMs default, the 180,000 ms generationTimeoutMs default, no automatic resend after timeout, ProseMirror logical multiline verification, Claude stable message:N identity, Claude DOM virtualization handling, tolerance for transient assistant shells without ordinals during generation, no production DOM-index fallback for Claude identity, and set-based smoke-turn verification instead of raw DOM-count verification.
 
 The known limitation remains: independent runs require the user to manually open fresh ChatGPT and Claude chats. This is accepted for Milestone 4A; Milestone 4B has not started.
+
+### 11f. Verified Milestone 4B.3 real-site convergence result
+
+The real ChatGPT ⇄ Claude convergence smoke test (`npm run smoke:convergence`) passed
+against the real attached ChatGPT/Claude tabs. The verified flow was: G0 → C1 → G1 → C2.
+
+- Stop reason: `CONVERGED`
+- Rounds consumed: 2
+- Final cleanStreak: 2
+- Remaining OPEN HIGH: 0
+- Remaining OPEN MEDIUM: 0
+
+`npm run build`, `npm test`, and `npm run smoke:convergence` all passed. This closes out
+Milestone 4B (4B.1 deterministic convergence core, 4B.2 convergence prompts/orchestration
+loop, 4B.3 real-browser smoke), all three sub-milestones now implemented and verified.

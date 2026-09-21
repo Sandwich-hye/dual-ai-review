@@ -1,3 +1,21 @@
+# Milestone 4B Final Review
+
+## Milestone 4B status
+
+Milestone 4B has passed the final real-browser smoke test. The verified flow was: G0 → C1 → G1 → C2.
+
+- Stop reason: `CONVERGED`
+- Rounds consumed: 2
+- Final cleanStreak: 2
+- Remaining OPEN HIGH: 0
+- Remaining OPEN MEDIUM: 0
+
+`npm run build` passed, `npm test` passed, and `npm run smoke:convergence` passed against the real attached ChatGPT/Claude tabs.
+
+This closeout is documentation-only; no further Milestone 4B functional changes were made. All three sub-milestones (4B.1 deterministic convergence core, 4B.2 convergence prompts + orchestration loop, 4B.3 real-browser smoke) are now implemented and verified. See `DECISIONS.md` §11f for the full recorded result.
+
+---
+
 # Milestone 4A Final Review
 
 ## Milestone 4A status
