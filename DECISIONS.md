@@ -314,6 +314,56 @@ against the real attached ChatGPT/Claude tabs. The verified flow was: G0 → C1 
 Milestone 4B (4B.1 deterministic convergence core, 4B.2 convergence prompts/orchestration
 loop, 4B.3 real-browser smoke), all three sub-milestones now implemented and verified.
 
+### 11h. Verified Milestone 6A supervised-review smoke result
+
+Milestone 6A was completed with the real CDP-attached ChatGPT and Claude tabs.
+
+- Command: `npm run smoke:supervised-review`
+- Result: `SUPERVISED REVIEW SMOKE TEST PASSED`
+- Audited rounds: 2
+- Human outcomes: `CONTINUE`, then `ACCEPT`
+- Final outcome: `ACCEPTED`
+- Supervisor behavior: first assessment was advisory; the subsequent Supervisor failure
+  degraded to `SupervisorUnavailable` without affecting the audited result
+- Verification: `npm run build` passed; `npm test` passed (214 tests)
+
+The smoke harness confirmed that Supervisor assessments are aligned with audited rounds,
+remain advisory, preserve human decisions, and serialize successfully. No Milestone 5
+files were modified.
+
+### 11i. Milestone 6A real-time JEV Supervisor Layer closeout
+
+Milestone 6A: Real-time JEV Supervisor Layer completed.
+
+Architecture:
+
+```text
+Decision Agent
+        |
+        v
+JEV Supervisor Decorator
+        |
+        v
+Supervised Human Gate Wrapper
+        |
+        v
+Original Human Gate
+```
+
+Verified capabilities:
+
+- JEV runs before the human decision and sees the current round `DecisionRecommendation`.
+- Pending and completed round states are handled correctly.
+- `DECISION_INCONSISTENCY` works with pending rounds.
+- Hard-max and chronic-claim final rounds are visible before human decision.
+- The deterministic Supervisor delegates to `evaluateSupervisorState`.
+- JEV cannot modify `HumanGate` outcomes.
+- Supervisor failures are isolated.
+- Milestone 5 frozen boundaries are preserved.
+
+Verification: `npm run build` passed; `npm test` passed (214 tests). No Milestone 4A,
+4B, or 5 files were modified.
+
 ### 11g. Verified Milestone 5 real-browser audited review result
 
 The real audited review smoke test was completed with:

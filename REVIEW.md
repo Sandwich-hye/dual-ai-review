@@ -1,3 +1,52 @@
+# Milestone 6A Final Review
+
+## Milestone 6A status
+
+Milestone 6A: Real-time JEV Supervisor Layer completed.
+
+Architecture:
+
+```text
+Decision Agent
+        |
+        v
+JEV Supervisor Decorator
+        |
+        v
+Supervised Human Gate Wrapper
+        |
+        v
+Original Human Gate
+```
+
+- Command: `npm run smoke:supervised-review`
+- Result: `SUPERVISED REVIEW SMOKE TEST PASSED`
+- Audited rounds: 2
+- Human outcomes: `CONTINUE`, then `ACCEPT`
+- Final outcome: `ACCEPTED`
+- Supervisor failure handling: a Supervisor failure degraded to `SupervisorUnavailable`
+  and did not alter the audited result or human-controlled outcome
+- Verification: `npm run build` passed; `npm test` passed (214 tests)
+
+Verified capabilities:
+
+- JEV runs before human decision.
+- Current-round `DecisionRecommendation` is visible to JEV.
+- Pending and completed round states are handled correctly.
+- `DECISION_INCONSISTENCY` works with pending rounds.
+- Hard-max final rounds are visible before human decision.
+- Chronic-claim final rounds are visible before human decision.
+- Deterministic Supervisor delegates to `evaluateSupervisorState`.
+- JEV cannot modify `HumanGate` outcomes.
+- Supervisor failures are isolated.
+- Milestone 5 frozen boundaries are preserved.
+
+The smoke run confirmed the base audited result, assessment/round alignment, advisory-only
+Supervisor behavior, preserved human outcomes, and JSON serialization. No Milestone 4A,
+4B, or 5 files were modified.
+
+---
+
 # Milestone 5 Final Review
 
 ## Milestone 5 status

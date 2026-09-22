@@ -316,6 +316,20 @@ tasks (do not check off until implemented and verified):
 - [x] Add dedicated Chrome startup script using `.browser-profile`
 - [x] Manual attach-mode real-site test personally verified
 
+### Phase 2A — Milestone 6A closeout
+
+- [x] **Milestone 6A: Real-time JEV Supervisor Layer completed**
+- [x] Implement deterministic Supervisor contracts and engine
+- [x] Integrate the advisory Supervisor wrapper without changing Milestone 5
+- [x] Verify current-round recommendations, pending/completed states, inconsistency,
+      hard-max, and chronic-claim final-round visibility
+- [x] Verify advisory-only outcomes, failure isolation, and preserved Milestone 5 boundaries
+- [x] Add CDP-only supervised-review smoke validation
+- [x] Complete real-browser smoke: `npm run smoke:supervised-review`
+- [x] Smoke result: `SUPERVISED REVIEW SMOKE TEST PASSED`
+- [x] Verified two-round audited lifecycle with unchanged human-controlled outcome
+- [x] Verification: `npm run build` passed; `npm test` passed (214 tests)
+
 ### Phase 2A — Milestone 5 closeout
 
 - [x] Real-browser audited review smoke completed with `npm run smoke:audited-review`
