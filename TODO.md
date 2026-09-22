@@ -316,6 +316,18 @@ tasks (do not check off until implemented and verified):
 - [x] Add dedicated Chrome startup script using `.browser-profile`
 - [x] Manual attach-mode real-site test personally verified
 
+### Phase 2A — Milestone 5 closeout
+
+- [x] Real-browser audited review smoke completed with `npm run smoke:audited-review`
+- [x] Smoke result: `AUDITED REVIEW SMOKE TEST PASSED`
+- [x] Verified lifecycle: `G0 → C1 → Human CONTINUE → G1 → C2 → Human ACCEPT`
+- [x] Verified two sequential rounds and final outcome `ACCEPTED`
+- [x] Verified outcome origin: `HUMAN_OVERRODE_RECOMMENDATION`
+- [x] Verified evidence records `EV-1`, `EV-2`, and `EV-3` were processed
+- [x] Verification: `npm run build` passed; `npm test` passed (189 tests)
+- [x] Documentation closeout completed without modifying production code, tests, browser
+      code, or Milestone 4A/4B files
+
 
 
 

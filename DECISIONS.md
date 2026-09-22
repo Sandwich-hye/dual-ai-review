@@ -313,3 +313,19 @@ against the real attached ChatGPT/Claude tabs. The verified flow was: G0 → C1 
 `npm run build`, `npm test`, and `npm run smoke:convergence` all passed. This closes out
 Milestone 4B (4B.1 deterministic convergence core, 4B.2 convergence prompts/orchestration
 loop, 4B.3 real-browser smoke), all three sub-milestones now implemented and verified.
+
+### 11g. Verified Milestone 5 real-browser audited review result
+
+The real audited review smoke test was completed with:
+
+- Command: `npm run smoke:audited-review`
+- Result: `AUDITED REVIEW SMOKE TEST PASSED`
+- Lifecycle: `G0 → C1 → Human CONTINUE → G1 → C2 → Human ACCEPT`
+- Rounds: 2
+- Final outcome: `ACCEPTED`
+- Outcome origin: `HUMAN_OVERRODE_RECOMMENDATION`
+- Evidence processed: `EV-1`, `EV-2`, `EV-3`
+- Verification: `npm run build` passed; `npm test` passed (189 tests)
+
+This records the Milestone 5 documentation closeout only. No production code, tests,
+browser code, or Milestone 4A/4B files were changed as part of the closeout.

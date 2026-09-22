@@ -1,3 +1,24 @@
+# Milestone 5 Final Review
+
+## Milestone 5 status
+
+Milestone 5 passed the real-browser audited review smoke test.
+
+- Command: `npm run smoke:audited-review`
+- Result: `AUDITED REVIEW SMOKE TEST PASSED`
+- Lifecycle: `G0 → C1 → Human CONTINUE → G1 → C2 → Human ACCEPT`
+- Rounds: 2
+- Final outcome: `ACCEPTED`
+- Outcome origin: `HUMAN_OVERRODE_RECOMMENDATION`
+- Evidence processed: `EV-1`, `EV-2`, `EV-3`
+- Verification: `npm run build` passed; `npm test` passed (189 tests)
+
+The audited lifecycle, human decision records, sequential rounds, ledger snapshots,
+and terminal outcome were validated. This closeout is documentation-only; no production
+code, tests, browser code, or Milestone 4A/4B files were modified.
+
+---
+
 # Milestone 4B Final Review
 
 ## Milestone 4B status
