@@ -25,6 +25,7 @@
     "smoke:convergence": "npm run build && node dist/scripts/smoke-convergence.js",
     "smoke:audited-review": "npm run build && node dist/scripts/smoke-audited-review.js",
     "smoke:supervised-review": "npm run build && node dist/scripts/smoke-supervised-review.js",
+    "smoke:augmented-review": "npm run build && node dist/scripts/smoke-augmented-review.js",
     "test": "playwright test"
   },
   "dependencies": {
