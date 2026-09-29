@@ -1,4 +1,4 @@
-import { Page } from "playwright";
+import type { Page } from "playwright";
 
 export type SiteLoadStatus = "ready" | "login_required" | "unknown_state" | "navigation_failed";
 export interface SiteLoadResult { status: SiteLoadStatus; site: string; url: string; detail?: string; screenshotPath?: string }
@@ -11,11 +11,18 @@ export type GenerationOutcome =
   | { outcome: "complete" }
   | { outcome: "timeout"; partialText: string; diagnostics: GenerationDiagnostics }
   | { outcome: "error_banner"; detail: string };
-export interface ConversationalSiteAdapter extends SiteAdapter {
-  captureTurnBaseline(page: Page): Promise<TurnBaseline>;
-  sendPrompt(page: Page, prompt: string): Promise<void>;
-  waitForGenerationStart(page: Page, baseline: TurnBaseline, options?: GenerationStartOptions): Promise<GenerationStartResult>;
-  waitForGenerationComplete(page: Page, baseline: TurnBaseline, timeoutMs: number): Promise<GenerationOutcome>;
-  getLatestAssistantResponse(page: Page, baseline: TurnBaseline): Promise<string>;
+/** Shared method shape only; the existing review loops still require Playwright Page. */
+export interface LlmProvider<TSession> {
+  name: string;
+  url: string;
+  checkReady(session: TSession): Promise<SiteLoadStatus>;
+  captureTurnBaseline(session: TSession): Promise<TurnBaseline>;
+  sendPrompt(session: TSession, prompt: string): Promise<void>;
+  waitForGenerationStart(session: TSession, baseline: TurnBaseline, options?: GenerationStartOptions): Promise<GenerationStartResult>;
+  waitForGenerationComplete(session: TSession, baseline: TurnBaseline, timeoutMs: number): Promise<GenerationOutcome>;
+  getLatestAssistantResponse(session: TSession, baseline: TurnBaseline): Promise<string>;
 }
+
+/** Preserve the exact Page-bound adapter contract used by existing browser code. */
+export interface ConversationalSiteAdapter extends SiteAdapter, LlmProvider<Page> {}
 

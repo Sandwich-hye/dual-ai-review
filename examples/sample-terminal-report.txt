@@ -1,0 +1,13 @@
+SYNTHETIC EXAMPLE - NOT LIVE PROVIDER OUTPUT
+
+Outcome: REJECTED (HUMAN_OVERRODE_RECOMMENDATION)
+Generator LLM: ollama / synthetic-example-not-run / local_http
+Reviewer LLM: ollama / synthetic-example-not-run / local_http
+Rounds: 1; claims: 1; evidence: 0
+Round 1: CONTINUE_RECOMMENDED; human REJECT (OVERRODE)
+  Claims: 1 high, 0 medium, 0 low; branch: DEFAULT_CONTINUE
+Final claim ledger:
+  CLAIM-1 [HIGH/OPEN] Missing body or email throws before validation
+Final answer:
+The function validates the email format and returns an account object.
+Audit JSON: examples/sample-audit.json

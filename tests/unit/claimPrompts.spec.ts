@@ -28,6 +28,10 @@ const evidence: Evidence[] = [
 
 test("reviewer prompt includes task, answer, and exact claim-review sentinel/schema contract", () => {
   const prompt = buildClaimReviewClaudeReviewPrompt("Original task", "Current answer", [], 1);
+  expect(prompt).toContain("You are the Reviewer LLM.");
+  expect(prompt).toContain("CURRENT GENERATOR LLM ANSWER:");
+  expect(prompt).not.toContain("You are Claude.");
+  expect(prompt).not.toContain("CURRENT CHATGPT ANSWER:");
   expect(prompt).toContain("Original task");
   expect(prompt).toContain("Current answer");
   expect(prompt).toContain("BEGIN_STRUCTURED_REVIEW");
@@ -49,6 +53,8 @@ test("round-one reviewer prompt forbids prior claim references", () => {
 
 test("later reviewer prompt includes the current claim ledger and requires id reuse", () => {
   const prompt = buildClaimReviewClaudeReviewPrompt("Task", "Revised answer", [claim], 2);
+  expect(prompt).toContain("LATEST GENERATOR LLM ANSWER:");
+  expect(prompt).not.toContain("LATEST CHATGPT ANSWER:");
   expect(prompt).toContain("CURRENT CLAIM LEDGER:");
   expect(prompt).toContain("CLAIM-1");
   expect(prompt).toContain("Retry loses the request identifier");
@@ -58,6 +64,8 @@ test("later reviewer prompt includes the current claim ledger and requires id re
 
 test("generator prompt includes previous answer, review, unresolved claims, and evidence", () => {
   const prompt = buildClaimReviewRevisionPrompt("Task", "Previous answer", "Reviewer response", [claim], evidence);
+  expect(prompt).toContain("You are the Generator LLM.");
+  expect(prompt).not.toContain("You are ChatGPT.");
   expect(prompt).toContain("Task");
   expect(prompt).toContain("Previous answer");
   expect(prompt).toContain("Reviewer response");

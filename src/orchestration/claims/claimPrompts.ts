@@ -38,11 +38,11 @@ export function buildClaimReviewClaudeReviewPrompt(
 
   if (round === 1) {
     return [
-      "You are Claude. Review the following answer produced by ChatGPT.",
+      "You are the Reviewer LLM. Review the following answer produced by the Generator LLM.",
       "",
       "TASK:", "---", task, "---",
       "",
-      "CURRENT CHATGPT ANSWER:", "---", answer, "---",
+      "CURRENT GENERATOR LLM ANSWER:", "---", answer, "---",
       "",
       "This is round 1. There is no prior claim ledger, so all claim-id arrays must be empty.",
       "Identify concrete claims that materially affect correctness, completeness, safety, or quality.",
@@ -62,11 +62,11 @@ export function buildClaimReviewClaudeReviewPrompt(
     : claimLedger.flatMap((entry) => [claimLine(entry), `    evidence refs: for=${entry.evidenceFor.join(", ") || "0"}; against=${entry.evidenceAgainst.join(", ") || "0"}`]);
 
   return [
-    "You are Claude. Review the latest revised answer produced by ChatGPT.",
+    "You are the Reviewer LLM. Review the latest revised answer produced by the Generator LLM.",
     "",
     "TASK:", "---", task, "---",
     "",
-    "LATEST CHATGPT ANSWER:", "---", answer, "---",
+    "LATEST GENERATOR LLM ANSWER:", "---", answer, "---",
     "",
     "CURRENT CLAIM LEDGER:",
     ...ledgerLines,
@@ -97,7 +97,7 @@ export function buildClaimReviewRevisionPrompt(
   ]);
 
   return [
-    "You are ChatGPT. Revise your previous answer to address the reviewer's unresolved claims.",
+    "You are the Generator LLM. Revise your previous answer to address the reviewer's unresolved claims.",
     "",
     "TASK:", "---", task, "---",
     "",
